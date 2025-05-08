@@ -75,7 +75,7 @@ export default function Home() {
         backgroundColor: '#fff', // page background
       }}
     >
-      <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Paolo's Chatbot</h1>
+      <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Paolo Chatbot</h1>
 
       <div
         style={{
