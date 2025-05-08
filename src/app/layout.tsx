@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Paolo's Chatbot",
-  description: "Paolo's chatbot, built on Cloudflare Workers AI and Cloudflare AI Gateway",
+  title: "Paolo Chatbot",
+  description: "Paolo chatbot, built on Cloudflare Workers AI and Cloudflare AI Gateway",
 };
 
 export default function RootLayout({
