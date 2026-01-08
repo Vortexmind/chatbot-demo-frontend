@@ -2,19 +2,53 @@
 
 import React, { useState, useRef, useEffect } from "react";
 
+const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
+
 type Message = {
   sender: "user" | "bot";
   text: string;
-};
-
-type BotResponse = {
-  response: string;
 };
 
 type AIGatewayInfo = {
   model: string | null;
   provider: string | null;
 };
+
+const styles = {
+  main: {
+    padding: "2rem",
+    fontFamily: "system-ui, sans-serif",
+    maxWidth: "640px",
+    margin: "0 auto",
+    color: "#000",
+    backgroundColor: "#fff",
+  },
+  link: {
+    color: "#0070f3",
+    textDecoration: "none",
+  },
+  input: {
+    padding: "0.75rem",
+    fontSize: "1rem",
+    borderRadius: "4px",
+    border: "1px solid #ccc",
+    width: "100%",
+    color: "#000",
+    outlineColor: "#0070f3",
+  },
+  label: {
+    fontWeight: "bold" as const,
+    display: "block",
+    marginBottom: "0.5rem",
+  },
+} as const;
+
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -26,12 +60,9 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const getCookie = (name: string): string | null => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-    return null;
-  };
+  const hasUsername = username.trim().length > 0;
+  const hasInput = input.trim().length > 0;
+  const canSubmit = hasUsername && hasInput && !loading;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -43,124 +74,53 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = input.trim();
-    if (!trimmed) return;
+    const trimmedInput = input.trim();
+    if (!trimmedInput) return;
 
-    const userMessage: Message = { sender: "user", text: trimmed };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, { sender: "user", text: trimmedInput }]);
     setInput("");
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "https://chatbot-demo-worker.homesecurity.rocks/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "CF-Access-JWT-Assertion": getCookie("CF_Authorization") || "",
-          },
-          credentials: "include",
-          body: JSON.stringify({ prompt: trimmed, username: username.trim() }),
-        }
-      );
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "CF-Access-JWT-Assertion": getCookie("CF_Authorization") || "",
+        },
+        credentials: "include",
+        body: JSON.stringify({ prompt: trimmedInput, username: username.trim() }),
+      });
 
       const model = response.headers.get("cf-aig-model");
       const provider = response.headers.get("cf-aig-provider");
-      const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
-      setAigInfo({ model, provider });
-      if (hasChanged) {
+      if (model !== aigInfo.model || provider !== aigInfo.provider) {
+        setAigInfo({ model, provider });
         setAigHighlight(true);
         setTimeout(() => setAigHighlight(false), 1500);
       }
 
-      const data: BotResponse = await response.json();
-      const botMessage: Message = {
-        sender: "bot",
-        text: data.response || "No response received.",
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "❌ Error: Could not reach chatbot." },
-      ]);
+      const data = await response.json();
+      setMessages((prev) => [...prev, { sender: "bot", text: data.response || "No response received." }]);
+    } catch {
+      setMessages((prev) => [...prev, { sender: "bot", text: "❌ Error: Could not reach chatbot." }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      setInput("");
-    }
-  };
-
   return (
-    <main
-      style={{
-        padding: "2rem",
-        fontFamily: "system-ui, sans-serif",
-        maxWidth: "640px",
-        margin: "0 auto",
-        color: "#000", // default text color
-        backgroundColor: "#fff", // page background
-      }}
-    >
-      <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>
-        Well-behaved chatbot
-      </h1>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "1rem",
-          fontSize: "0.9rem",
-          fontFamily: "system-ui, sans-serif",
-          color: "#555",
-        }}
-      >
+    <main style={styles.main}>
+      <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Well-behaved chatbot</h1>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", fontSize: "0.9rem", color: "#555" }}>
         <span>
           Built with{" "}
-          <a
-            href="https://developers.cloudflare.com/workers-ai/"
-            style={{
-              color: "#0070f3",
-              textDecoration: "none",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.textDecoration = "underline")
-            }
-            onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
-          >
-            Cloudflare Workers AI
-          </a>{" "}
-          and{" "}
-          <a
-            href="https://developers.cloudflare.com/ai-gateway/"
-            style={{
-              color: "#0070f3",
-              textDecoration: "none",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.textDecoration = "underline")
-            }
-            onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
-          >
-            Cloudflare AI Gateway
-          </a>
-          .
+          <a href="https://developers.cloudflare.com/workers-ai/" style={styles.link}>Cloudflare Workers AI</a>
+          {" "}and{" "}
+          <a href="https://developers.cloudflare.com/ai-gateway/" style={styles.link}>Cloudflare AI Gateway</a>.
         </span>
-        <div style={{ marginLeft: "1rem" }}>
-          <img
-            src="cf-logo-v-rgb.png"
-            alt="Cloudflare logo"
-            width={48}
-            height={48}
-            style={{ display: "block" }}
-          />
-        </div>
+        <img src="cf-logo-v-rgb.png" alt="Cloudflare logo" width={48} height={48} style={{ marginLeft: "1rem" }} />
       </div>
 
       <div
@@ -171,116 +131,58 @@ export default function Home() {
           borderRadius: "6px",
           fontSize: "0.85rem",
           color: "#333",
-          border: aigHighlight ? "1px solid #ffc107" : "1px solid #ddd",
+          border: `1px solid ${aigHighlight ? "#ffc107" : "#ddd"}`,
           transition: "background-color 0.3s ease, border-color 0.3s ease",
         }}
       >
         <strong>AI Gateway Info</strong>
         <div style={{ marginTop: "0.5rem" }}>
-          <div>
-            <span style={{ color: "#666" }}>Model:</span> {aigInfo.model || "N/A"}
-          </div>
-          <div>
-            <span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider || "N/A"}
-          </div>
+          <div><span style={{ color: "#666" }}>Model:</span> {aigInfo.model || "N/A"}</div>
+          <div><span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider || "N/A"}</div>
         </div>
       </div>
 
       <div
-        style={{
-          border: "1px solid #ccc",
-          borderRadius: "6px",
-          padding: "1rem",
-          height: "300px",
-          overflowY: "auto",
-          marginBottom: "1rem",
-          backgroundColor: "#f9f9f9",
-          color: "#000",
-          fontSize: "1rem",
-        }}
+        style={{ border: "1px solid #ccc", borderRadius: "6px", padding: "1rem", height: "300px", overflowY: "auto", marginBottom: "1rem", backgroundColor: "#f9f9f9" }}
         aria-live="polite"
       >
         {messages.map((msg, index) => (
-          <div
-            key={index}
-            style={{
-              textAlign: msg.sender === "user" ? "right" : "left",
-              margin: "0.5rem 0",
-              color: "#000", // explicitly set readable text color
-            }}
-          >
-            <strong>{msg.sender === "user" ? "You" : "Bot"}:</strong>{" "}
-            <span>{msg.text}</span>
+          <div key={index} style={{ textAlign: msg.sender === "user" ? "right" : "left", margin: "0.5rem 0" }}>
+            <strong>{msg.sender === "user" ? "You" : "Bot"}:</strong> {msg.text}
           </div>
         ))}
-        {loading && (
-          <div style={{ color: "#444", fontStyle: "italic" }}>
-            Bot is typing...
-          </div>
-        )}
+        {loading && <div style={{ color: "#444", fontStyle: "italic" }}>Bot is typing...</div>}
         <div ref={chatEndRef} />
       </div>
 
       <div style={{ marginBottom: "1rem" }}>
-        <label htmlFor="username-input" style={{ fontWeight: "bold", display: "block", marginBottom: "0.5rem" }}>
-          Username
-        </label>
+        <label htmlFor="username-input" style={styles.label}>Username</label>
         <input
           id="username-input"
-          name="username"
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter your name to start chatting"
-          aria-required="true"
-          aria-label="Username input"
-          style={{
-            padding: "0.75rem",
-            fontSize: "1rem",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            width: "100%",
-            color: "#000",
-            backgroundColor: "#fff",
-            outlineColor: "#0070f3",
-          }}
+          style={{ ...styles.input, backgroundColor: "#fff" }}
         />
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        aria-label="Chat message form"
-        style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
-      >
-        <label htmlFor="chat-input" style={{ fontWeight: "bold" }}>
-          Your message
-        </label>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <label htmlFor="chat-input" style={styles.label}>Your message</label>
         <input
           id="chat-input"
-          name="chat"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={username.trim() ? "Type a message and press Enter" : "Please enter your username first"}
+          onKeyDown={(e) => e.key === "Escape" && setInput("")}
+          placeholder={hasUsername ? "Type a message and press Enter" : "Please enter your username first"}
           ref={inputRef}
-          disabled={!username.trim()}
-          aria-required="true"
-          aria-label="Chat input"
-          style={{
-            padding: "0.75rem",
-            fontSize: "1rem",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            width: "100%",
-            color: "#000",
-            backgroundColor: username.trim() ? "#fff" : "#f5f5f5",
-            outlineColor: "#0070f3",
-          }}
+          disabled={!hasUsername}
+          style={{ ...styles.input, backgroundColor: hasUsername ? "#fff" : "#f5f5f5" }}
         />
         <button
           type="submit"
-          disabled={!username.trim() || !input.trim() || loading}
+          disabled={!canSubmit}
           style={{
             padding: "0.75rem",
             fontSize: "1rem",
@@ -288,11 +190,10 @@ export default function Home() {
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: username.trim() && input.trim() && !loading ? "pointer" : "not-allowed",
-            opacity: username.trim() && input.trim() && !loading ? 1 : 0.5,
+            cursor: canSubmit ? "pointer" : "not-allowed",
+            opacity: canSubmit ? 1 : 0.5,
             transition: "opacity 0.2s ease-in-out",
           }}
-          aria-disabled={!username.trim() || !input.trim() || loading}
         >
           {loading ? "Sending..." : "Send"}
         </button>
