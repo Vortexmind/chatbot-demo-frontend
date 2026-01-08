@@ -150,13 +150,27 @@ export default function Home() {
         {messages.map((msg, index) => (
           <div key={index} style={{ textAlign: msg.sender === "user" ? "right" : "left", margin: "0.5rem 0" }}>
             <strong>{msg.sender === "user" ? "You" : "Bot"}:</strong>
-            <ReactMarkdown
-              components={{
-                p: ({ children }) => <span style={{ display: "inline" }}>{children}</span>,
-              }}
-            >
-              {msg.text}
-            </ReactMarkdown>
+            <div className="prose prose-sm max-w-none inline">
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <span className="inline">{children}</span>,
+                  strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                  code: ({ children }) => <code className="bg-gray-200 px-1 rounded text-sm">{children}</code>,
+                  pre: ({ children }) => <pre className="bg-gray-200 p-2 rounded overflow-x-auto my-2">{children}</pre>,
+                  ul: ({ children }) => <ul className="list-disc list-inside my-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside my-2">{children}</ol>,
+                  li: ({ children }) => <li className="my-1">{children}</li>,
+                  a: ({ href, children }) => <a href={href} className="text-blue-600 underline">{children}</a>,
+                  h1: ({ children }) => <h1 className="text-xl font-bold my-2">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-lg font-bold my-2">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-base font-bold my-1">{children}</h3>,
+                  blockquote: ({ children }) => <blockquote className="border-l-4 border-gray-300 pl-2 my-2 italic">{children}</blockquote>,
+                }}
+              >
+                {msg.text}
+              </ReactMarkdown>
+            </div>
           </div>
         ))}
         {loading && <div style={{ color: "#444", fontStyle: "italic" }}>Bot is typing...</div>}
