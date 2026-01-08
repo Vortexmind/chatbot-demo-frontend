@@ -22,6 +22,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [aigInfo, setAigInfo] = useState<AIGatewayInfo>({ model: null, provider: null });
+  const [aigHighlight, setAigHighlight] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +59,8 @@ export default function Home() {
       const model = response.headers.get("cf-aig-model");
       const provider = response.headers.get("cf-aig-provider");
       setAigInfo({ model, provider });
+      setAigHighlight(true);
+      setTimeout(() => setAigHighlight(false), 1500);
 
       const data: BotResponse = await response.json();
       const botMessage: Message = {
@@ -150,6 +153,29 @@ export default function Home() {
 
       <div
         style={{
+          marginBottom: "1rem",
+          padding: "0.75rem",
+          backgroundColor: aigHighlight ? "#fff3cd" : "#f0f4f8",
+          borderRadius: "6px",
+          fontSize: "0.85rem",
+          color: "#333",
+          border: aigHighlight ? "1px solid #ffc107" : "1px solid #ddd",
+          transition: "background-color 0.3s ease, border-color 0.3s ease",
+        }}
+      >
+        <strong>AI Gateway Info</strong>
+        <div style={{ marginTop: "0.5rem" }}>
+          <div>
+            <span style={{ color: "#666" }}>Model:</span> {aigInfo.model || "N/A"}
+          </div>
+          <div>
+            <span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider || "N/A"}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
           border: "1px solid #ccc",
           borderRadius: "6px",
           padding: "1rem",
@@ -157,7 +183,7 @@ export default function Home() {
           overflowY: "auto",
           marginBottom: "1rem",
           backgroundColor: "#f9f9f9",
-          color: "#000", // ensure visible text
+          color: "#000",
           fontSize: "1rem",
         }}
         aria-live="polite"
@@ -259,28 +285,6 @@ export default function Home() {
           {loading ? "Sending..." : "Send"}
         </button>
       </form>
-
-      <div
-        style={{
-          marginTop: "1rem",
-          padding: "0.75rem",
-          backgroundColor: "#f0f4f8",
-          borderRadius: "6px",
-          fontSize: "0.85rem",
-          color: "#333",
-          border: "1px solid #ddd",
-        }}
-      >
-        <strong>AI Gateway Info</strong>
-        <div style={{ marginTop: "0.5rem" }}>
-          <div>
-            <span style={{ color: "#666" }}>Model:</span> {aigInfo.model || "N/A"}
-          </div>
-          <div>
-            <span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider || "N/A"}
-          </div>
-        </div>
-      </div>
     </main>
   );
 }
