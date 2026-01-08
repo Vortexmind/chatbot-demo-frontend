@@ -18,6 +18,7 @@ type AIGatewayInfo = {
 
 export default function Home() {
   const [input, setInput] = useState("");
+  const [username, setUsername] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [aigInfo, setAigInfo] = useState<AIGatewayInfo>({ model: null, provider: null });
@@ -50,7 +51,7 @@ export default function Home() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ prompt: trimmed }),
+          body: JSON.stringify({ prompt: trimmed, username: username.trim() }),
         }
       );
 
@@ -182,6 +183,32 @@ export default function Home() {
         <div ref={chatEndRef} />
       </div>
 
+      <div style={{ marginBottom: "1rem" }}>
+        <label htmlFor="username-input" style={{ fontWeight: "bold", display: "block", marginBottom: "0.5rem" }}>
+          Username
+        </label>
+        <input
+          id="username-input"
+          name="username"
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Enter your name to start chatting"
+          aria-required="true"
+          aria-label="Username input"
+          style={{
+            padding: "0.75rem",
+            fontSize: "1rem",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+            width: "100%",
+            color: "#000",
+            backgroundColor: "#fff",
+            outlineColor: "#0070f3",
+          }}
+        />
+      </div>
+
       <form
         onSubmit={handleSubmit}
         aria-label="Chat message form"
@@ -197,8 +224,9 @@ export default function Home() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message and press Enter"
+          placeholder={username.trim() ? "Type a message and press Enter" : "Please enter your username first"}
           ref={inputRef}
+          disabled={!username.trim()}
           aria-required="true"
           aria-label="Chat input"
           style={{
@@ -207,14 +235,14 @@ export default function Home() {
             borderRadius: "4px",
             border: "1px solid #ccc",
             width: "100%",
-            color: "#000", // input text color
-            backgroundColor: "#fff",
+            color: "#000",
+            backgroundColor: username.trim() ? "#fff" : "#f5f5f5",
             outlineColor: "#0070f3",
           }}
         />
         <button
           type="submit"
-          disabled={!input.trim() || loading}
+          disabled={!username.trim() || !input.trim() || loading}
           style={{
             padding: "0.75rem",
             fontSize: "1rem",
@@ -222,43 +250,37 @@ export default function Home() {
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: input.trim() && !loading ? "pointer" : "not-allowed",
-            opacity: input.trim() && !loading ? 1 : 0.5,
+            cursor: username.trim() && input.trim() && !loading ? "pointer" : "not-allowed",
+            opacity: username.trim() && input.trim() && !loading ? 1 : 0.5,
             transition: "opacity 0.2s ease-in-out",
           }}
-          aria-disabled={!input.trim() || loading}
+          aria-disabled={!username.trim() || !input.trim() || loading}
         >
           {loading ? "Sending..." : "Send"}
         </button>
       </form>
 
-      {(aigInfo.model || aigInfo.provider) && (
-        <div
-          style={{
-            marginTop: "1rem",
-            padding: "0.75rem",
-            backgroundColor: "#f0f4f8",
-            borderRadius: "6px",
-            fontSize: "0.85rem",
-            color: "#333",
-            border: "1px solid #ddd",
-          }}
-        >
-          <strong>AI Gateway Info</strong>
-          <div style={{ marginTop: "0.5rem" }}>
-            {aigInfo.model && (
-              <div>
-                <span style={{ color: "#666" }}>Model:</span> {aigInfo.model}
-              </div>
-            )}
-            {aigInfo.provider && (
-              <div>
-                <span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider}
-              </div>
-            )}
+      <div
+        style={{
+          marginTop: "1rem",
+          padding: "0.75rem",
+          backgroundColor: "#f0f4f8",
+          borderRadius: "6px",
+          fontSize: "0.85rem",
+          color: "#333",
+          border: "1px solid #ddd",
+        }}
+      >
+        <strong>AI Gateway Info</strong>
+        <div style={{ marginTop: "0.5rem" }}>
+          <div>
+            <span style={{ color: "#666" }}>Model:</span> {aigInfo.model || "N/A"}
+          </div>
+          <div>
+            <span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider || "N/A"}
           </div>
         </div>
-      )}
+      </div>
     </main>
   );
 }
