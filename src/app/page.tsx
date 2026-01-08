@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
 
@@ -148,7 +149,14 @@ export default function Home() {
       >
         {messages.map((msg, index) => (
           <div key={index} style={{ textAlign: msg.sender === "user" ? "right" : "left", margin: "0.5rem 0" }}>
-            <strong>{msg.sender === "user" ? "You" : "Bot"}:</strong> {msg.text}
+            <strong>{msg.sender === "user" ? "You" : "Bot"}:</strong>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <span style={{ display: "inline" }}>{children}</span>,
+              }}
+            >
+              {msg.text}
+            </ReactMarkdown>
           </div>
         ))}
         {loading && <div style={{ color: "#444", fontStyle: "italic" }}>Bot is typing...</div>}
