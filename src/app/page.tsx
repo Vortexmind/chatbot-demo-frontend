@@ -112,7 +112,7 @@ export default function Home() {
         setAigError(true);
         setAigHighlight(true);
         setTimeout(() => setAigHighlight(false), 1500);
-        setMessages((prev) => [...prev, { sender: "bot", text: `❌ ${debugMsg}` }]);
+        setMessages((prev) => [...prev, { sender: "bot", text: "Sorry, I'm unable to process your request at this time. Please try again later." }]);
         return;
       }
 
