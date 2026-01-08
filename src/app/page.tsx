@@ -26,6 +26,13 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const getCookie = (name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+    return null;
+  };
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -51,7 +58,9 @@ export default function Home() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "CF-Access-JWT-Assertion": getCookie("CF_Authorization") || "",
           },
+          credentials: "include",
           body: JSON.stringify({ prompt: trimmed, username: username.trim() }),
         }
       );
