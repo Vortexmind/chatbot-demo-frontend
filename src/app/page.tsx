@@ -58,9 +58,12 @@ export default function Home() {
 
       const model = response.headers.get("cf-aig-model");
       const provider = response.headers.get("cf-aig-provider");
+      const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
       setAigInfo({ model, provider });
-      setAigHighlight(true);
-      setTimeout(() => setAigHighlight(false), 1500);
+      if (hasChanged) {
+        setAigHighlight(true);
+        setTimeout(() => setAigHighlight(false), 1500);
+      }
 
       const data: BotResponse = await response.json();
       const botMessage: Message = {
