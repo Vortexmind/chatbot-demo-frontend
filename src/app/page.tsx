@@ -13,6 +13,12 @@ type Message = {
 type AIGatewayInfo = {
   model: string | null;
   provider: string | null;
+  debug: string | null;
+};
+
+type ErrorResponse = {
+  success: boolean;
+  error?: Array<{ code: number; message: string }>;
 };
 
 const styles = {
@@ -56,8 +62,9 @@ export default function Home() {
   const [username, setUsername] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [aigInfo, setAigInfo] = useState<AIGatewayInfo>({ model: null, provider: null });
+  const [aigInfo, setAigInfo] = useState<AIGatewayInfo>({ model: null, provider: null, debug: null });
   const [aigHighlight, setAigHighlight] = useState(false);
+  const [aigError, setAigError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +88,7 @@ export default function Home() {
     setMessages((prev) => [...prev, { sender: "user", text: trimmedInput }]);
     setInput("");
     setLoading(true);
+    setAigError(false);
 
     try {
       const response = await fetch(API_URL, {
@@ -95,8 +103,22 @@ export default function Home() {
 
       const model = response.headers.get("cf-aig-model");
       const provider = response.headers.get("cf-aig-provider");
-      if (model !== aigInfo.model || provider !== aigInfo.provider) {
-        setAigInfo({ model, provider });
+
+      if (response.status >= 400 && response.status < 500) {
+        const errorData = await response.json() as ErrorResponse;
+        const errorInfo = errorData.error?.[0];
+        const debugMsg = errorInfo ? `Error ${errorInfo.code}: ${errorInfo.message}` : `HTTP ${response.status}`;
+        setAigInfo({ model, provider, debug: debugMsg });
+        setAigError(true);
+        setAigHighlight(true);
+        setTimeout(() => setAigHighlight(false), 1500);
+        setMessages((prev) => [...prev, { sender: "bot", text: `❌ ${debugMsg}` }]);
+        return;
+      }
+
+      const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
+      setAigInfo({ model, provider, debug: null });
+      if (hasChanged) {
         setAigHighlight(true);
         setTimeout(() => setAigHighlight(false), 1500);
       }
@@ -128,18 +150,19 @@ export default function Home() {
         style={{
           marginBottom: "1rem",
           padding: "0.75rem",
-          backgroundColor: aigHighlight ? "#fff3cd" : "#f0f4f8",
+          backgroundColor: aigError ? "#fee2e2" : aigHighlight ? "#fff3cd" : "#f0f4f8",
           borderRadius: "6px",
           fontSize: "0.85rem",
-          color: "#333",
-          border: `1px solid ${aigHighlight ? "#ffc107" : "#ddd"}`,
-          transition: "background-color 0.3s ease, border-color 0.3s ease",
+          color: aigError ? "#991b1b" : "#333",
+          border: `1px solid ${aigError ? "#dc2626" : aigHighlight ? "#ffc107" : "#ddd"}`,
+          transition: "background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease",
         }}
       >
         <strong>AI Gateway Info</strong>
         <div style={{ marginTop: "0.5rem" }}>
-          <div><span style={{ color: "#666" }}>Model:</span> {aigInfo.model || "N/A"}</div>
-          <div><span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider || "N/A"}</div>
+          <div><span style={{ color: aigError ? "#b91c1c" : "#666" }}>Model:</span> {aigInfo.model || "N/A"}</div>
+          <div><span style={{ color: aigError ? "#b91c1c" : "#666" }}>Provider:</span> {aigInfo.provider || "N/A"}</div>
+          <div><span style={{ color: aigError ? "#b91c1c" : "#666" }}>Debug:</span> {aigInfo.debug || "N/A"}</div>
         </div>
       </div>
 
