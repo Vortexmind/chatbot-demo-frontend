@@ -11,10 +11,16 @@ type BotResponse = {
   response: string;
 };
 
+type AIGatewayInfo = {
+  model: string | null;
+  provider: string | null;
+};
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [aigInfo, setAigInfo] = useState<AIGatewayInfo>({ model: null, provider: null });
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +53,10 @@ export default function Home() {
           body: JSON.stringify({ prompt: trimmed }),
         }
       );
+
+      const model = response.headers.get("cf-aig-model");
+      const provider = response.headers.get("cf-aig-provider");
+      setAigInfo({ model, provider });
 
       const data: BotResponse = await response.json();
       const botMessage: Message = {
@@ -221,6 +231,34 @@ export default function Home() {
           {loading ? "Sending..." : "Send"}
         </button>
       </form>
+
+      {(aigInfo.model || aigInfo.provider) && (
+        <div
+          style={{
+            marginTop: "1rem",
+            padding: "0.75rem",
+            backgroundColor: "#f0f4f8",
+            borderRadius: "6px",
+            fontSize: "0.85rem",
+            color: "#333",
+            border: "1px solid #ddd",
+          }}
+        >
+          <strong>AI Gateway Info</strong>
+          <div style={{ marginTop: "0.5rem" }}>
+            {aigInfo.model && (
+              <div>
+                <span style={{ color: "#666" }}>Model:</span> {aigInfo.model}
+              </div>
+            )}
+            {aigInfo.provider && (
+              <div>
+                <span style={{ color: "#666" }}>Provider:</span> {aigInfo.provider}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
