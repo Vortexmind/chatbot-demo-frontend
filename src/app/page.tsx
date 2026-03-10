@@ -5,10 +5,30 @@ import ReactMarkdown from "react-markdown";
 
 const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
 
+type Attachment = {
+  filename: string;
+  mimeType: string;
+  data: string;
+};
+
 type Message = {
   sender: "user" | "bot";
   text: string;
+  attachments?: Attachment[];
 };
+
+const ACCEPTED_FILE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILES = 1;
 
 type AIGatewayInfo = {
   model: string | null;
@@ -143,9 +163,11 @@ export default function Home() {
   const [aigError, setAigError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   const hasUsername = username.trim().length > 0;
-  const hasInput = input.trim().length > 0;
+  const hasInput = input.trim().length > 0 || attachments.length > 0;
   const canSubmit = hasUsername && hasInput && !loading;
 
   useEffect(() => {
@@ -188,17 +210,73 @@ export default function Home() {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: Attachment[] = [];
+    const currentCount = attachments.length;
+
+    for (let i = 0; i < files.length && currentCount + newAttachments.length < MAX_FILES; i++) {
+      const file = files[i];
+
+      if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+        alert(`File type not supported: ${file.name}`);
+        continue;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        alert(`File too large (max 10MB): ${file.name}`);
+        continue;
+      }
+
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1]);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      newAttachments.push({
+        filename: file.name,
+        mimeType: file.type,
+        data: base64,
+      });
+    }
+
+    setAttachments((prev) => [...prev, ...newAttachments]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedInput = input.trim();
-    if (!trimmedInput) return;
+    if (!trimmedInput && attachments.length === 0) return;
 
-    setMessages((prev) => [...prev, { sender: "user", text: trimmedInput }]);
+    const currentAttachments = [...attachments];
+    setMessages((prev) => [...prev, { sender: "user", text: trimmedInput, attachments: currentAttachments.length > 0 ? currentAttachments : undefined }]);
     setInput("");
+    setAttachments([]);
     setLoading(true);
     setAigError(false);
 
     try {
+      const requestBody: { prompt: string; username: string; attachments?: Attachment[] } = {
+        prompt: trimmedInput,
+        username: username.trim(),
+      };
+      if (currentAttachments.length > 0) {
+        requestBody.attachments = currentAttachments;
+      }
+
       const response = await fetch(API_URL, {
         method: "POST",
         headers: {
@@ -206,7 +284,7 @@ export default function Home() {
           "CF-Access-JWT-Assertion": getCookie("CF_Authorization") || "",
         },
         credentials: "include",
-        body: JSON.stringify({ prompt: trimmedInput, username: username.trim() }),
+        body: JSON.stringify(requestBody),
       });
 
       const model = response.headers.get("cf-aig-model");
@@ -336,6 +414,25 @@ export default function Home() {
         {messages.map((msg, index) => (
           <div key={index} style={{ textAlign: msg.sender === "user" ? "right" : "left", margin: "0.5rem 0" }}>
             <strong>{msg.sender === "user" ? username : "Bot"}:</strong>
+            {msg.attachments && msg.attachments.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", margin: "0.5rem 0", justifyContent: msg.sender === "user" ? "flex-end" : "flex-start" }}>
+                {msg.attachments.map((att, attIndex) => (
+                  <div key={attIndex} style={{ display: "inline-block" }}>
+                    {att.mimeType.startsWith("image/") ? (
+                      <img
+                        src={`data:${att.mimeType};base64,${att.data}`}
+                        alt={att.filename}
+                        style={{ maxWidth: "150px", maxHeight: "150px", borderRadius: "4px", border: "1px solid #ddd" }}
+                      />
+                    ) : (
+                      <div style={{ padding: "0.5rem", backgroundColor: "#e5e7eb", borderRadius: "4px", fontSize: "0.8rem" }}>
+                        📄 {att.filename}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="markdown-content">
               <ReactMarkdown>{msg.text}</ReactMarkdown>
             </div>
@@ -372,17 +469,92 @@ export default function Home() {
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         <label htmlFor="chat-input" style={styles.label}>Your message</label>
-        <textarea
-          id="chat-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleTextareaKeyDown}
-          placeholder={hasUsername ? "Type a message and press Enter (Shift+Enter for new line)" : "Please enter your username first"}
-          ref={textareaRef}
-          disabled={!hasUsername}
-          style={{ ...styles.textarea, backgroundColor: hasUsername ? "#fff" : "#f5f5f5" }}
-          rows={3}
-        />
+
+        {attachments.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", padding: "0.5rem", backgroundColor: "#f0f4f8", borderRadius: "4px" }}>
+            {attachments.map((att, index) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  padding: "0.25rem 0.5rem",
+                  backgroundColor: "#fff",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "0.85rem",
+                }}
+              >
+                {att.mimeType.startsWith("image/") ? (
+                  <img
+                    src={`data:${att.mimeType};base64,${att.data}`}
+                    alt={att.filename}
+                    style={{ width: "24px", height: "24px", objectFit: "cover", borderRadius: "2px" }}
+                  />
+                ) : (
+                  <span>📄</span>
+                )}
+                <span style={{ maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {att.filename}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(index)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "0 0.25rem",
+                    fontSize: "1rem",
+                    color: "#666",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+          <textarea
+            id="chat-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleTextareaKeyDown}
+            placeholder={hasUsername ? "Type a message and press Enter (Shift+Enter for new line)" : "Please enter your username first"}
+            ref={textareaRef}
+            disabled={!hasUsername}
+            style={{ ...styles.textarea, backgroundColor: hasUsername ? "#fff" : "#f5f5f5", flex: 1 }}
+            rows={3}
+          />
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            accept={ACCEPTED_FILE_TYPES.join(",")}
+            style={{ display: "none" }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!hasUsername || attachments.length >= MAX_FILES}
+            title={attachments.length >= MAX_FILES ? `Max ${MAX_FILES} files` : "Attach file"}
+            style={{
+              padding: "0.75rem",
+              fontSize: "1.25rem",
+              backgroundColor: "#f0f4f8",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              cursor: hasUsername && attachments.length < MAX_FILES ? "pointer" : "not-allowed",
+              opacity: hasUsername && attachments.length < MAX_FILES ? 1 : 0.5,
+            }}
+          >
+            📎
+          </button>
+        </div>
+
         <button
           type="submit"
           disabled={!canSubmit}
