@@ -21,20 +21,31 @@ type ErrorResponse = {
   error?: Array<{ code: number; message: string }>;
 };
 
-const RANDOM_USERNAMES = [
-  "CosmicPanda42",
-  "NeonWolf99",
-  "PixelNinja77",
-  "ThunderFox23",
-  "CyberOwl88",
-  "StarGazer56",
-  "MysticTiger31",
-  "QuantumBear64",
+const ADJECTIVES = [
+  "Happy", "Clever", "Swift", "Brave", "Calm", "Bright", "Cool", "Gentle",
+  "Lucky", "Mighty", "Noble", "Quick", "Silent", "Wise", "Cosmic", "Golden",
+  "Crystal", "Mystic", "Stellar", "Velvet", "Azure", "Crimson", "Emerald",
 ];
 
+const ANIMALS = [
+  "Panda", "Wolf", "Fox", "Owl", "Bear", "Tiger", "Eagle", "Dolphin",
+  "Falcon", "Hawk", "Lion", "Otter", "Raven", "Shark", "Phoenix", "Dragon",
+  "Panther", "Koala", "Penguin", "Rabbit", "Turtle", "Zebra", "Lynx",
+];
+
+function generateRandomUsername(): string {
+  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  const number = Math.floor(Math.random() * 100);
+  return `${adjective}${animal}${number}`;
+}
+
 function getRandomUsernames(count: number): string[] {
-  const shuffled = [...RANDOM_USERNAMES].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+  const usernames = new Set<string>();
+  while (usernames.size < count) {
+    usernames.add(generateRandomUsername());
+  }
+  return Array.from(usernames);
 }
 
 const styles = {
@@ -324,7 +335,7 @@ export default function Home() {
       >
         {messages.map((msg, index) => (
           <div key={index} style={{ textAlign: msg.sender === "user" ? "right" : "left", margin: "0.5rem 0" }}>
-            <strong>{msg.sender === "user" ? "You" : "Bot"}:</strong>
+            <strong>{msg.sender === "user" ? username : "Bot"}:</strong>
             <div className="markdown-content">
               <ReactMarkdown>{msg.text}</ReactMarkdown>
             </div>
@@ -336,7 +347,26 @@ export default function Home() {
 
       {username && (
         <div style={{ marginBottom: "1rem", fontSize: "0.9rem", color: "#666" }}>
-          Chatting as: <strong>{username}</strong>
+          Chatting as: <strong>{username}</strong>{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setSuggestedUsernames(getRandomUsernames(4));
+              setDialogUsername(username);
+              setShowUsernameDialog(true);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#0070f3",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              textDecoration: "underline",
+              padding: 0,
+            }}
+          >
+            Change
+          </button>
         </div>
       )}
 
