@@ -21,6 +21,22 @@ type ErrorResponse = {
   error?: Array<{ code: number; message: string }>;
 };
 
+const RANDOM_USERNAMES = [
+  "CosmicPanda42",
+  "NeonWolf99",
+  "PixelNinja77",
+  "ThunderFox23",
+  "CyberOwl88",
+  "StarGazer56",
+  "MysticTiger31",
+  "QuantumBear64",
+];
+
+function getRandomUsernames(count: number): string[] {
+  const shuffled = [...RANDOM_USERNAMES].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
 const styles = {
   main: {
     padding: "2rem",
@@ -43,10 +59,56 @@ const styles = {
     color: "#000",
     outlineColor: "#0070f3",
   },
+  textarea: {
+    padding: "0.75rem",
+    fontSize: "1rem",
+    borderRadius: "4px",
+    border: "1px solid #ccc",
+    width: "100%",
+    color: "#000",
+    outlineColor: "#0070f3",
+    resize: "vertical" as const,
+    minHeight: "80px",
+    fontFamily: "inherit",
+  },
   label: {
     fontWeight: "bold" as const,
     display: "block",
     marginBottom: "0.5rem",
+  },
+  overlay: {
+    position: "fixed" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  },
+  dialog: {
+    backgroundColor: "#fff",
+    padding: "2rem",
+    borderRadius: "8px",
+    maxWidth: "400px",
+    width: "90%",
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
+  },
+  dialogTitle: {
+    fontSize: "1.5rem",
+    marginBottom: "1rem",
+    fontWeight: "bold" as const,
+  },
+  suggestionButton: {
+    padding: "0.5rem 1rem",
+    fontSize: "0.9rem",
+    backgroundColor: "#f0f4f8",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
   },
 } as const;
 
@@ -60,12 +122,15 @@ function getCookie(name: string): string | null {
 export default function Home() {
   const [input, setInput] = useState("");
   const [username, setUsername] = useState("");
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  const [dialogUsername, setDialogUsername] = useState("");
+  const [suggestedUsernames, setSuggestedUsernames] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [aigInfo, setAigInfo] = useState<AIGatewayInfo>({ model: null, provider: null, debug: null });
   const [aigHighlight, setAigHighlight] = useState(false);
   const [aigError, setAigError] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const hasUsername = username.trim().length > 0;
@@ -73,12 +138,44 @@ export default function Home() {
   const canSubmit = hasUsername && hasInput && !loading;
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const storedUsername = localStorage.getItem("chatbot_username");
+    if (storedUsername) {
+      setUsername(storedUsername);
+    } else {
+      setSuggestedUsernames(getRandomUsernames(4));
+      setShowUsernameDialog(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!showUsernameDialog) {
+      textareaRef.current?.focus();
+    }
+  }, [showUsernameDialog]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleUsernameSubmit = (name: string) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    localStorage.setItem("chatbot_username", trimmedName);
+    setUsername(trimmedName);
+    setShowUsernameDialog(false);
+    setDialogUsername("");
+  };
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (canSubmit) {
+        handleSubmit(e as unknown as React.FormEvent);
+      }
+    } else if (e.key === "Escape") {
+      setInput("");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +231,61 @@ export default function Home() {
 
   return (
     <main style={styles.main}>
+      {showUsernameDialog && (
+        <div style={styles.overlay}>
+          <div style={styles.dialog}>
+            <h2 style={styles.dialogTitle}>Welcome! What&apos;s your name?</h2>
+            <p style={{ marginBottom: "1rem", color: "#666" }}>
+              Enter a username to start chatting
+            </p>
+            <input
+              type="text"
+              value={dialogUsername}
+              onChange={(e) => setDialogUsername(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleUsernameSubmit(dialogUsername)}
+              placeholder="Enter your username"
+              style={{ ...styles.input, marginBottom: "1rem" }}
+              autoFocus
+            />
+            <p style={{ marginBottom: "0.5rem", color: "#666", fontSize: "0.9rem" }}>
+              Or pick a suggested username:
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1rem" }}>
+              {suggestedUsernames.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => handleUsernameSubmit(name)}
+                  style={styles.suggestionButton}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#e0e7ef")}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#f0f4f8")}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUsernameSubmit(dialogUsername)}
+              disabled={!dialogUsername.trim()}
+              style={{
+                padding: "0.75rem",
+                fontSize: "1rem",
+                backgroundColor: "#0070f3",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: dialogUsername.trim() ? "pointer" : "not-allowed",
+                opacity: dialogUsername.trim() ? 1 : 0.5,
+                width: "100%",
+              }}
+            >
+              Start Chatting
+            </button>
+          </div>
+        </div>
+      )}
+
       <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Well-behaved chatbot</h1>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", fontSize: "0.9rem", color: "#555" }}>
@@ -182,30 +334,24 @@ export default function Home() {
         <div ref={chatEndRef} />
       </div>
 
-      <div style={{ marginBottom: "1rem" }}>
-        <label htmlFor="username-input" style={styles.label}>Username</label>
-        <input
-          id="username-input"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter your name to start chatting"
-          style={{ ...styles.input, backgroundColor: "#fff" }}
-        />
-      </div>
+      {username && (
+        <div style={{ marginBottom: "1rem", fontSize: "0.9rem", color: "#666" }}>
+          Chatting as: <strong>{username}</strong>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         <label htmlFor="chat-input" style={styles.label}>Your message</label>
-        <input
+        <textarea
           id="chat-input"
-          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Escape" && setInput("")}
-          placeholder={hasUsername ? "Type a message and press Enter" : "Please enter your username first"}
-          ref={inputRef}
+          onKeyDown={handleTextareaKeyDown}
+          placeholder={hasUsername ? "Type a message and press Enter (Shift+Enter for new line)" : "Please enter your username first"}
+          ref={textareaRef}
           disabled={!hasUsername}
-          style={{ ...styles.input, backgroundColor: hasUsername ? "#fff" : "#f5f5f5" }}
+          style={{ ...styles.textarea, backgroundColor: hasUsername ? "#fff" : "#f5f5f5" }}
+          rows={3}
         />
         <button
           type="submit"
