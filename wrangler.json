@@ -1,15 +1,24 @@
 {
-  "name": "chatbot-demo-frontend",
-  "main": ".open-next/worker.js",
-  "compatibility_date": "2025-04-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "minify": true,
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
-  },
-  "observability": {
-    "enabled": true
-  },
-  "upload_source_maps": true
+	"name": "chatbot-demo-frontend",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"minify": true,
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "NEXT_INC_CACHE_KV",
+			"id": "9a548800c12a4afab2b75d1afa1848bc",
+			"remote": true
+		}
+	],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
 }
