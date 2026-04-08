@@ -12,6 +12,7 @@ import {
   Image,
   File,
   Trash,
+  CircleNotch,
 } from "@phosphor-icons/react";
 import type { AIGatewayEvent } from "@/lib/types";
 
@@ -38,6 +39,8 @@ function EventIcon({ type }: { type: AIGatewayEvent["type"] }) {
       return <XCircle weight="bold" className="h-4 w-4 text-red-600" />;
     case "error":
       return <Warning weight="bold" className="h-4 w-4 text-yellow-600" />;
+    case "streaming":
+      return <CircleNotch weight="bold" className="h-4 w-4 text-kumo-brand animate-spin" />;
   }
 }
 
@@ -53,6 +56,7 @@ function EventRow({ event }: { event: AIGatewayEvent }) {
   const isBlocked = event.type === "blocked";
   const isError = event.type === "error";
   const isResponse = event.type === "response";
+  const isStreaming = event.type === "streaming";
 
   return (
     <div
@@ -61,6 +65,8 @@ function EventRow({ event }: { event: AIGatewayEvent }) {
           ? "bg-red-50"
           : isError
           ? "bg-yellow-50"
+          : isStreaming
+          ? "bg-blue-50"
           : "hover:bg-kumo-tint"
       }`}
     >
@@ -75,13 +81,16 @@ function EventRow({ event }: { event: AIGatewayEvent }) {
               &ldquo;{event.promptPreview}&rdquo;
             </span>
           )}
+          {isStreaming && (
+            <span className="text-kumo-link">Streaming response...</span>
+          )}
           {event.hasAttachment && (
             <span className="flex items-center gap-0.5">
               <AttachmentIcon type={event.attachmentType} />
             </span>
           )}
         </div>
-        {(isResponse || isBlocked) && (
+        {(isResponse || isBlocked || isStreaming) && (
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             {event.model && (
               <Badge variant="blue-subtle">{event.model}</Badge>

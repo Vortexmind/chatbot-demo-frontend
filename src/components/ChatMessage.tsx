@@ -8,6 +8,12 @@ type ChatMessageProps = {
   username: string;
 };
 
+function StreamingCursor() {
+  return (
+    <span className="inline-block w-2 h-4 bg-kumo-brand animate-pulse ml-0.5 align-middle" />
+  );
+}
+
 export function ChatMessage({ message, username }: ChatMessageProps) {
   const isUser = message.sender === "user";
 
@@ -63,6 +69,7 @@ export function ChatMessage({ message, username }: ChatMessageProps) {
       >
         <div className="markdown-content">
           <ReactMarkdown>{message.text}</ReactMarkdown>
+          {message.isStreaming && <StreamingCursor />}
         </div>
       </div>
     </div>

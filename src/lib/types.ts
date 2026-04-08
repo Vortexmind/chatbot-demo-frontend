@@ -15,6 +15,7 @@ export type Message = {
   text: string;
   attachments?: Attachment[];
   blocked?: BlockInfo;
+  isStreaming?: boolean;
 };
 
 export type AIGatewayInfo = {
@@ -34,7 +35,7 @@ export type PresetPrompt = {
   description?: string;
 };
 
-export type AIGatewayEventType = "request" | "response" | "blocked" | "error";
+export type AIGatewayEventType = "request" | "response" | "blocked" | "error" | "streaming";
 
 export type AIGatewayEvent = {
   id: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@cloudflare/kumo";
 import {
   ChatLayout,
@@ -21,6 +21,20 @@ function generateEventId(): string {
   return `event-${Date.now()}-${++eventIdCounter}`;
 }
 
+// Parse SSE data from AI Gateway streaming response
+// Format: data: {"choices":[{"delta":{"content":"token"}}]}
+function parseSSEData(line: string): string | null {
+  if (!line.startsWith("data: ")) return null;
+  const jsonStr = line.slice(6);
+  if (jsonStr === "[DONE]") return null;
+  try {
+    const data = JSON.parse(jsonStr);
+    return data.choices?.[0]?.delta?.content || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [username, setUsername] = useState("");
@@ -37,6 +51,9 @@ export default function Home() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [aigEvents, setAigEvents] = useState<AIGatewayEvent[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Ref to track streaming event ID for updating it when complete
+  const streamingEventIdRef = useRef<string | null>(null);
 
   const hasUsername = username.trim().length > 0;
 
@@ -67,14 +84,21 @@ export default function Home() {
   }, []);
 
   const addEvent = useCallback((event: Omit<AIGatewayEvent, "id" | "timestamp">) => {
-    setAigEvents((prev) => [
-      ...prev,
-      {
-        ...event,
-        id: generateEventId(),
-        timestamp: new Date(),
-      },
-    ]);
+    const newEvent = {
+      ...event,
+      id: generateEventId(),
+      timestamp: new Date(),
+    };
+    setAigEvents((prev) => [...prev, newEvent]);
+    return newEvent.id;
+  }, []);
+
+  const updateEvent = useCallback((id: string, updates: Partial<AIGatewayEvent>) => {
+    setAigEvents((prev) =>
+      prev.map((event) =>
+        event.id === id ? { ...event, ...updates } : event
+      )
+    );
   }, []);
 
   const clearEvents = useCallback(() => {
@@ -146,9 +170,11 @@ export default function Home() {
         prompt: string;
         username: string;
         attachments?: Attachment[];
+        stream: boolean;
       } = {
         prompt: trimmedInput,
         username: username.trim(),
+        stream: true, // Enable streaming
       };
       if (currentAttachments.length > 0) {
         requestBody.attachments = currentAttachments;
@@ -167,6 +193,7 @@ export default function Home() {
       const model = response.headers.get("cf-aig-model");
       const provider = response.headers.get("cf-aig-provider");
 
+      // Handle error responses (non-streaming JSON)
       if (response.status >= 400 && response.status < 500) {
         const errorData = (await response.json()) as ErrorResponse;
         const errorInfo = errorData.error?.[0];
@@ -204,31 +231,140 @@ export default function Home() {
         return;
       }
 
-      // Log successful response event
-      addEvent({
-        type: "response",
-        model,
-        provider,
-        httpStatus: response.status,
-      });
+      // Check if response is streaming (SSE)
+      const contentType = response.headers.get("content-type") || "";
+      const isStreaming = contentType.includes("text/event-stream");
 
-      const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
-      setAigInfo({ model, provider, debug: null });
-      if (hasChanged) {
-        setAigHighlight(true);
-        setTimeout(() => setAigHighlight(false), 1500);
+      if (isStreaming && response.body) {
+        // Log streaming event
+        const streamEventId = addEvent({
+          type: "streaming",
+          model,
+          provider,
+          httpStatus: response.status,
+        });
+        streamingEventIdRef.current = streamEventId;
+
+        // Update AI Gateway info
+        const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
+        setAigInfo({ model, provider, debug: null });
+        if (hasChanged) {
+          setAigHighlight(true);
+          setTimeout(() => setAigHighlight(false), 1500);
+        }
+
+        // Add a placeholder streaming message
+        const streamingMessageIndex = messages.length + 1; // +1 for the user message we just added
+        setMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: "", isStreaming: true },
+        ]);
+
+        // Read the stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let fullText = "";
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Process complete lines from buffer
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (!trimmedLine) continue;
+
+              const token = parseSSEData(trimmedLine);
+              if (token) {
+                fullText += token;
+                // Update the streaming message with accumulated text
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  const lastIndex = newMessages.length - 1;
+                  if (lastIndex >= 0 && newMessages[lastIndex].sender === "bot") {
+                    newMessages[lastIndex] = {
+                      ...newMessages[lastIndex],
+                      text: fullText,
+                      isStreaming: true,
+                    };
+                  }
+                  return newMessages;
+                });
+              }
+            }
+          }
+
+          // Process any remaining data in buffer
+          if (buffer.trim()) {
+            const token = parseSSEData(buffer.trim());
+            if (token) {
+              fullText += token;
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        // Finalize the message (remove streaming flag)
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastIndex = newMessages.length - 1;
+          if (lastIndex >= 0 && newMessages[lastIndex].sender === "bot") {
+            newMessages[lastIndex] = {
+              ...newMessages[lastIndex],
+              text: fullText || "No response received.",
+              isStreaming: false,
+            };
+          }
+          return newMessages;
+        });
+
+        // Update the streaming event to a response event
+        if (streamingEventIdRef.current) {
+          updateEvent(streamingEventIdRef.current, { type: "response" });
+          streamingEventIdRef.current = null;
+        }
+
+      } else {
+        // Non-streaming response (fallback)
+        addEvent({
+          type: "response",
+          model,
+          provider,
+          httpStatus: response.status,
+        });
+
+        const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
+        setAigInfo({ model, provider, debug: null });
+        if (hasChanged) {
+          setAigHighlight(true);
+          setTimeout(() => setAigHighlight(false), 1500);
+        }
+
+        const data = (await response.json()) as { response?: string };
+        setMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: data.response || "No response received." },
+        ]);
       }
-
-      const data = (await response.json()) as { response?: string };
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: data.response || "No response received." },
-      ]);
     } catch {
       // Log error event
       addEvent({
         type: "error",
       });
+
+      // If we were streaming, update the event
+      if (streamingEventIdRef.current) {
+        updateEvent(streamingEventIdRef.current, { type: "error" });
+        streamingEventIdRef.current = null;
+      }
 
       setMessages((prev) => [
         ...prev,
