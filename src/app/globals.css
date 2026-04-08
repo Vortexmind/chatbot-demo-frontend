@@ -1,37 +1,7 @@
 @import 'tailwindcss';
+@import '@cloudflare/kumo/styles/tailwind';
 
-@layer utilities {
-  :root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --foreground-rgb: 255, 255, 255;
-      --background-start-rgb: 0, 0, 0;
-      --background-end-rgb: 0, 0, 0;
-    }
-  }
-
-  body {
-    color: rgb(var(--foreground-rgb));
-    background: linear-gradient(
-        to bottom,
-        transparent,
-        rgb(var(--background-end-rgb))
-      )
-      rgb(var(--background-start-rgb));
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
+/* Markdown content styling - using Kumo tokens where applicable */
 .markdown-content {
   display: inline;
 }
@@ -50,14 +20,14 @@
 }
 
 .markdown-content code {
-  background-color: #e5e7eb;
+  background-color: var(--color-kumo-recessed);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
 }
 
 .markdown-content pre {
-  background-color: #e5e7eb;
+  background-color: var(--color-kumo-recessed);
   padding: 0.5rem;
   border-radius: 0.25rem;
   overflow-x: auto;
@@ -87,7 +57,7 @@
 }
 
 .markdown-content a {
-  color: #2563eb;
+  color: var(--text-color-kumo-link);
   text-decoration: underline;
 }
 
@@ -110,7 +80,7 @@
 }
 
 .markdown-content blockquote {
-  border-left: 4px solid #d1d5db;
+  border-left: 4px solid var(--color-kumo-line);
   padding-left: 0.5rem;
   margin: 0.5rem 0;
   font-style: italic;

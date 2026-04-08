@@ -6,7 +6,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Well-behaved chatbot",
-  description: "Well-behaved chatbot, built on Cloudflare Workers AI and Cloudflare AI Gateway",
+  description:
+    "Well-behaved chatbot, built on Cloudflare Workers AI and Cloudflare AI Gateway",
 };
 
 export default function RootLayout({
@@ -15,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="kumo">
       <body className={inter.className}>{children}</body>
     </html>
   );
