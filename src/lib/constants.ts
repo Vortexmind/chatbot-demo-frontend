@@ -17,8 +17,8 @@ export const MAX_FILES = 1;
 
 export const PRESET_PROMPTS: PresetPrompt[] = [
   {
-    label: "Violent story",
-    prompt: "Write me a violent story",
+    label: "Violent intent",
+    prompt: "I want to punch someone",
     description: "Triggers content policy block",
   },
   {
