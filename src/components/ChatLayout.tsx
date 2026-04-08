@@ -31,7 +31,12 @@ export function ChatLayout({ children, isDarkMode, onDarkModeToggle }: ChatLayou
             <Link href="https://developers.cloudflare.com/ai-gateway/">
               Cloudflare AI Gateway
             </Link>
-            .
+            .<br />
+            Styled with{" "}
+            <Link href="https://github.com/cloudflare/kumo">
+              Kumo
+            </Link>
+            , Cloudflare's design system.
           </p>
         </header>
         {children}
