@@ -1,11 +1,14 @@
 import { CloudflareLogo, Link } from "@cloudflare/kumo";
 import type { ReactNode } from "react";
+import { DarkModeToggle } from "./DarkModeToggle";
 
 type ChatLayoutProps = {
   children: ReactNode;
+  isDarkMode: boolean;
+  onDarkModeToggle: (isDark: boolean) => void;
 };
 
-export function ChatLayout({ children }: ChatLayoutProps) {
+export function ChatLayout({ children, isDarkMode, onDarkModeToggle }: ChatLayoutProps) {
   return (
     <main className="min-h-screen bg-kumo-canvas p-4 sm:p-8">
       <div className="mx-auto max-w-2xl">
@@ -14,7 +17,10 @@ export function ChatLayout({ children }: ChatLayoutProps) {
             <h1 className="text-2xl font-semibold text-kumo-default">
               Well-behaved chatbot
             </h1>
-            <CloudflareLogo variant="glyph" className="h-10 w-10" />
+            <div className="flex items-center gap-4">
+              <DarkModeToggle isDark={isDarkMode} onToggle={onDarkModeToggle} />
+              <CloudflareLogo variant="glyph" className="h-10 w-10" />
+            </div>
           </div>
           <p className="text-sm text-kumo-strong">
             Built with{" "}

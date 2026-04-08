@@ -33,3 +33,18 @@ export type PresetPrompt = {
   prompt: string;
   description?: string;
 };
+
+export type AIGatewayEventType = "request" | "response" | "blocked" | "error";
+
+export type AIGatewayEvent = {
+  id: string;
+  type: AIGatewayEventType;
+  timestamp: Date;
+  promptPreview?: string;
+  model?: string | null;
+  provider?: string | null;
+  httpStatus?: number;
+  blockReason?: string;
+  hasAttachment?: boolean;
+  attachmentType?: string;
+};

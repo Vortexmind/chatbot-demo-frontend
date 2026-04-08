@@ -1,18 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@cloudflare/kumo";
 import {
   ChatLayout,
   UsernameDialog,
   AIGatewayPanel,
+  AIGatewayActivityPanel,
   ChatMessageList,
   ChatInput,
   PresetPrompts,
 } from "@/components";
 import { API_URL } from "@/lib/constants";
-import { getCookie, getRandomUsernames } from "@/lib/utils";
-import type { Message, Attachment, AIGatewayInfo, ErrorResponse } from "@/lib/types";
+import { getCookie } from "@/lib/utils";
+import type { Message, Attachment, AIGatewayInfo, ErrorResponse, AIGatewayEvent } from "@/lib/types";
+
+// Generate unique IDs for events
+let eventIdCounter = 0;
+function generateEventId(): string {
+  return `event-${Date.now()}-${++eventIdCounter}`;
+}
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -28,10 +35,12 @@ export default function Home() {
   const [aigHighlight, setAigHighlight] = useState(false);
   const [aigError, setAigError] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [aigEvents, setAigEvents] = useState<AIGatewayEvent[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const hasUsername = username.trim().length > 0;
 
-  // Load username from localStorage on mount
+  // Load username and dark mode preference from localStorage on mount
   useEffect(() => {
     const storedUsername = localStorage.getItem("chatbot_username");
     if (storedUsername) {
@@ -39,6 +48,37 @@ export default function Home() {
     } else {
       setShowUsernameDialog(true);
     }
+
+    const storedDarkMode = localStorage.getItem("chatbot_dark_mode");
+    if (storedDarkMode === "true") {
+      setIsDarkMode(true);
+      document.documentElement.setAttribute("data-mode", "dark");
+    }
+  }, []);
+
+  const handleDarkModeToggle = useCallback((isDark: boolean) => {
+    setIsDarkMode(isDark);
+    localStorage.setItem("chatbot_dark_mode", isDark.toString());
+    if (isDark) {
+      document.documentElement.setAttribute("data-mode", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-mode");
+    }
+  }, []);
+
+  const addEvent = useCallback((event: Omit<AIGatewayEvent, "id" | "timestamp">) => {
+    setAigEvents((prev) => [
+      ...prev,
+      {
+        ...event,
+        id: generateEventId(),
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
+
+  const clearEvents = useCallback(() => {
+    setAigEvents([]);
   }, []);
 
   const handleUsernameSubmit = (name: string) => {
@@ -68,6 +108,26 @@ export default function Home() {
     if (!trimmedInput && attachments.length === 0) return;
 
     const currentAttachments = [...attachments];
+    
+    // Determine attachment type for event logging
+    let attachmentType: string | undefined;
+    if (currentAttachments.length > 0) {
+      const mimeType = currentAttachments[0].mimeType;
+      if (mimeType.startsWith("image/")) {
+        attachmentType = "image";
+      } else {
+        attachmentType = "document";
+      }
+    }
+
+    // Log request event
+    addEvent({
+      type: "request",
+      promptPreview: trimmedInput.slice(0, 50) + (trimmedInput.length > 50 ? "..." : ""),
+      hasAttachment: currentAttachments.length > 0,
+      attachmentType,
+    });
+
     setMessages((prev) => [
       ...prev,
       {
@@ -114,6 +174,15 @@ export default function Home() {
           ? `Error ${errorInfo.code}: ${errorInfo.message}`
           : `HTTP ${response.status}`;
 
+        // Log blocked event
+        addEvent({
+          type: "blocked",
+          model,
+          provider,
+          httpStatus: response.status,
+          blockReason: errorInfo?.message || debugMsg,
+        });
+
         setAigInfo({ model, provider, debug: debugMsg });
         setAigError(true);
         setAigHighlight(true);
@@ -135,6 +204,14 @@ export default function Home() {
         return;
       }
 
+      // Log successful response event
+      addEvent({
+        type: "response",
+        model,
+        provider,
+        httpStatus: response.status,
+      });
+
       const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
       setAigInfo({ model, provider, debug: null });
       if (hasChanged) {
@@ -148,6 +225,11 @@ export default function Home() {
         { sender: "bot", text: data.response || "No response received." },
       ]);
     } catch {
+      // Log error event
+      addEvent({
+        type: "error",
+      });
+
       setMessages((prev) => [
         ...prev,
         { sender: "bot", text: "Error: Could not reach chatbot." },
@@ -158,12 +240,17 @@ export default function Home() {
   };
 
   return (
-    <ChatLayout>
+    <ChatLayout
+      isDarkMode={isDarkMode}
+      onDarkModeToggle={handleDarkModeToggle}
+    >
       <UsernameDialog
         open={showUsernameDialog}
         initialUsername={username}
         onSubmit={handleUsernameSubmit}
       />
+
+      <AIGatewayActivityPanel events={aigEvents} onClear={clearEvents} />
 
       <AIGatewayPanel
         info={aigInfo}
