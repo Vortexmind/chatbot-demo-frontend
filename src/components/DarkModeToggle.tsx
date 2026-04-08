@@ -13,7 +13,7 @@ export function DarkModeToggle({ isDark, onToggle }: DarkModeToggleProps) {
     <div className="flex items-center gap-2">
       <Sun
         weight={isDark ? "regular" : "fill"}
-        className={`h-4 w-4 ${isDark ? "text-kumo-subtle" : "text-yellow-500"}`}
+        className={`h-4 w-4 ${isDark ? "text-kumo-subtle" : "text-kumo-warning"}`}
       />
       <Switch
         checked={isDark}

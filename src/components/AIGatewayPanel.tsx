@@ -15,13 +15,13 @@ export function AIGatewayPanel({ info, isError, isHighlighted }: AIGatewayPanelP
   let labelClass = "text-kumo-strong";
 
   if (isError) {
-    bgClass = "bg-red-100";
-    borderClass = "ring-red-500";
-    textClass = "text-red-900";
-    labelClass = "text-red-700";
+    bgClass = "bg-kumo-danger-tint";
+    borderClass = "ring-kumo-danger";
+    textClass = "text-kumo-danger";
+    labelClass = "text-kumo-danger";
   } else if (isHighlighted) {
-    bgClass = "bg-yellow-100";
-    borderClass = "ring-yellow-500";
+    bgClass = "bg-kumo-warning-tint";
+    borderClass = "ring-kumo-warning";
   }
 
   return (

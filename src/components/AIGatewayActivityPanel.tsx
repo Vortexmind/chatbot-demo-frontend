@@ -34,11 +34,11 @@ function EventIcon({ type }: { type: AIGatewayEvent["type"] }) {
     case "request":
       return <PaperPlaneTilt weight="bold" className="h-4 w-4 text-kumo-link" />;
     case "response":
-      return <CheckCircle weight="bold" className="h-4 w-4 text-green-600" />;
+      return <CheckCircle weight="bold" className="h-4 w-4 text-kumo-success" />;
     case "blocked":
-      return <XCircle weight="bold" className="h-4 w-4 text-red-600" />;
+      return <XCircle weight="bold" className="h-4 w-4 text-kumo-danger" />;
     case "error":
-      return <Warning weight="bold" className="h-4 w-4 text-yellow-600" />;
+      return <Warning weight="bold" className="h-4 w-4 text-kumo-warning" />;
     case "streaming":
       return <CircleNotch weight="bold" className="h-4 w-4 text-kumo-brand animate-spin" />;
   }
@@ -62,11 +62,11 @@ function EventRow({ event }: { event: AIGatewayEvent }) {
     <div
       className={`flex items-start gap-2 py-2 px-2 rounded text-xs ${
         isBlocked
-          ? "bg-red-50"
+          ? "bg-kumo-danger-tint"
           : isError
-          ? "bg-yellow-50"
+          ? "bg-kumo-warning-tint"
           : isStreaming
-          ? "bg-blue-50"
+          ? "bg-kumo-info-tint"
           : "hover:bg-kumo-tint"
       }`}
     >
@@ -106,10 +106,10 @@ function EventRow({ event }: { event: AIGatewayEvent }) {
           </div>
         )}
         {isBlocked && event.blockReason && (
-          <p className="text-red-700 mt-1">{event.blockReason}</p>
+          <p className="text-kumo-danger mt-1">{event.blockReason}</p>
         )}
         {isError && (
-          <p className="text-yellow-700 mt-1">Network error or timeout</p>
+          <p className="text-kumo-warning mt-1">Network error or timeout</p>
         )}
       </div>
     </div>

@@ -63,7 +63,7 @@ export function ChatMessage({ message, username }: ChatMessageProps) {
       <div
         className={`inline-block px-3 py-2 rounded-lg max-w-[85%] ${
           isUser
-            ? "bg-kumo-brand text-white"
+            ? "bg-kumo-brand text-kumo-inverse"
             : "bg-kumo-base text-kumo-default ring ring-kumo-line"
         }`}
       >
