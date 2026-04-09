@@ -3,13 +3,14 @@ import { PRESET_PROMPTS } from "@/lib/constants";
 
 type PresetPromptsProps = {
   onSelect: (prompt: string) => void;
-  centered?: boolean;
+  disabled?: boolean;
 };
 
-export function PresetPrompts({ onSelect, centered = false }: PresetPromptsProps) {
+export function PresetPrompts({ onSelect, disabled = false }: PresetPromptsProps) {
   return (
     <TooltipProvider>
-      <div className={`flex flex-wrap gap-2 ${centered ? "justify-center" : ""}`}>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-kumo-strong">Demo scenarios:</span>
         {PRESET_PROMPTS.map((preset) => (
           <Tooltip
             key={preset.label}
@@ -20,6 +21,8 @@ export function PresetPrompts({ onSelect, centered = false }: PresetPromptsProps
               variant="secondary"
               size="sm"
               onClick={() => onSelect(preset.prompt)}
+              disabled={disabled}
+              className="active:scale-95 transition-transform"
             >
               {preset.label}
             </Button>

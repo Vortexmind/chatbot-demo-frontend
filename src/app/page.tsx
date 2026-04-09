@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Button } from "@cloudflare/kumo";
 import {
   ChatLayout,
   UsernameDialog,
-  AIGatewayPanel,
-  AIGatewayActivityPanel,
+  AIGatewayDrawer,
   ChatMessageList,
   ChatInput,
   PresetPrompts,
@@ -51,13 +49,22 @@ export default function Home() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [aigEvents, setAigEvents] = useState<AIGatewayEvent[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // Ref to track streaming event ID for updating it when complete
   const streamingEventIdRef = useRef<string | null>(null);
+  // Ref to track current aigInfo for comparison in submitMessage
+  const aigInfoRef = useRef<AIGatewayInfo>(aigInfo);
 
   const hasUsername = username.trim().length > 0;
+  const blockedCount = aigEvents.filter((e) => e.type === "blocked").length;
 
-  // Load username and dark mode preference from localStorage on mount
+  // Keep aigInfoRef in sync
+  useEffect(() => {
+    aigInfoRef.current = aigInfo;
+  }, [aigInfo]);
+
+  // Load username, dark mode, and drawer preferences from localStorage on mount
   useEffect(() => {
     const storedUsername = localStorage.getItem("chatbot_username");
     if (storedUsername) {
@@ -71,6 +78,11 @@ export default function Home() {
       setIsDarkMode(true);
       document.documentElement.setAttribute("data-mode", "dark");
     }
+
+    const storedDrawer = localStorage.getItem("chatbot_drawer_open");
+    if (storedDrawer === "true") {
+      setIsDrawerOpen(true);
+    }
   }, []);
 
   const handleDarkModeToggle = useCallback((isDark: boolean) => {
@@ -81,6 +93,14 @@ export default function Home() {
     } else {
       document.documentElement.removeAttribute("data-mode");
     }
+  }, []);
+
+  const handleDrawerToggle = useCallback(() => {
+    setIsDrawerOpen((prev) => {
+      const newValue = !prev;
+      localStorage.setItem("chatbot_drawer_open", newValue.toString());
+      return newValue;
+    });
   }, []);
 
   const addEvent = useCallback((event: Omit<AIGatewayEvent, "id" | "timestamp">) => {
@@ -115,10 +135,6 @@ export default function Home() {
     setShowUsernameDialog(true);
   };
 
-  const handlePresetClick = (prompt: string) => {
-    setInput(prompt);
-  };
-
   const handleAttachmentAdd = (attachment: Attachment) => {
     setAttachments((prev) => [...prev, attachment]);
   };
@@ -127,16 +143,26 @@ export default function Home() {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async () => {
-    const trimmedInput = input.trim();
-    if (!trimmedInput && attachments.length === 0) return;
+  // New chat: reset everything
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setAigEvents([]);
+    setAigInfo({ model: null, provider: null, debug: null });
+    setAigError(false);
+    setAigHighlight(false);
+    setInput("");
+    setAttachments([]);
+  }, []);
 
-    const currentAttachments = [...attachments];
-    
+  // Core submission logic extracted so it can be called with a prompt directly
+  const submitMessage = useCallback(async (promptText: string, messageAttachments: Attachment[]) => {
+    const trimmedInput = promptText.trim();
+    if (!trimmedInput && messageAttachments.length === 0) return;
+
     // Determine attachment type for event logging
     let attachmentType: string | undefined;
-    if (currentAttachments.length > 0) {
-      const mimeType = currentAttachments[0].mimeType;
+    if (messageAttachments.length > 0) {
+      const mimeType = messageAttachments[0].mimeType;
       if (mimeType.startsWith("image/")) {
         attachmentType = "image";
       } else {
@@ -148,7 +174,7 @@ export default function Home() {
     addEvent({
       type: "request",
       promptPreview: trimmedInput.slice(0, 50) + (trimmedInput.length > 50 ? "..." : ""),
-      hasAttachment: currentAttachments.length > 0,
+      hasAttachment: messageAttachments.length > 0,
       attachmentType,
     });
 
@@ -157,7 +183,7 @@ export default function Home() {
       {
         sender: "user",
         text: trimmedInput,
-        attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
+        attachments: messageAttachments.length > 0 ? messageAttachments : undefined,
       },
     ]);
     setInput("");
@@ -174,10 +200,10 @@ export default function Home() {
       } = {
         prompt: trimmedInput,
         username: username.trim(),
-        stream: true, // Enable streaming
+        stream: true,
       };
-      if (currentAttachments.length > 0) {
-        requestBody.attachments = currentAttachments;
+      if (messageAttachments.length > 0) {
+        requestBody.attachments = messageAttachments;
       }
 
       const response = await fetch(API_URL, {
@@ -246,7 +272,8 @@ export default function Home() {
         streamingEventIdRef.current = streamEventId;
 
         // Update AI Gateway info
-        const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
+        const currentInfo = aigInfoRef.current;
+        const hasChanged = model !== currentInfo.model || provider !== currentInfo.provider;
         setAigInfo({ model, provider, debug: null });
         if (hasChanged) {
           setAigHighlight(true);
@@ -254,7 +281,6 @@ export default function Home() {
         }
 
         // Add a placeholder streaming message
-        const streamingMessageIndex = messages.length + 1; // +1 for the user message we just added
         setMessages((prev) => [
           ...prev,
           { sender: "bot", text: "", isStreaming: true },
@@ -341,7 +367,8 @@ export default function Home() {
           httpStatus: response.status,
         });
 
-        const hasChanged = model !== aigInfo.model || provider !== aigInfo.provider;
+        const currentInfo = aigInfoRef.current;
+        const hasChanged = model !== currentInfo.model || provider !== currentInfo.provider;
         setAigInfo({ model, provider, debug: null });
         if (hasChanged) {
           setAigHighlight(true);
@@ -373,12 +400,41 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [username, addEvent, updateEvent]);
+
+  // Handle submit from input (uses current input state and attachments)
+  const handleSubmit = useCallback(() => {
+    submitMessage(input.trim(), [...attachments]);
+  }, [input, attachments, submitMessage]);
+
+  // Handle preset click: auto-send the prompt immediately
+  const handlePresetClick = useCallback((prompt: string) => {
+    if (loading) return;
+    submitMessage(prompt, []);
+  }, [loading, submitMessage]);
+
+  // Drawer content
+  const drawerContent = (
+    <AIGatewayDrawer
+      events={aigEvents}
+      onClear={clearEvents}
+      info={aigInfo}
+      isError={aigError}
+      isHighlighted={aigHighlight}
+    />
+  );
 
   return (
     <ChatLayout
       isDarkMode={isDarkMode}
       onDarkModeToggle={handleDarkModeToggle}
+      username={hasUsername ? username : undefined}
+      onChangeUsername={handleChangeUsername}
+      isDrawerOpen={isDrawerOpen}
+      onDrawerToggle={handleDrawerToggle}
+      drawerContent={drawerContent}
+      blockedCount={blockedCount}
+      onNewChat={handleNewChat}
     >
       <UsernameDialog
         open={showUsernameDialog}
@@ -386,36 +442,19 @@ export default function Home() {
         onSubmit={handleUsernameSubmit}
       />
 
-      <AIGatewayActivityPanel events={aigEvents} onClear={clearEvents} />
-
-      <AIGatewayPanel
-        info={aigInfo}
-        isError={aigError}
-        isHighlighted={aigHighlight}
-      />
-
+      {/* Chat messages - flex-1 to fill available space */}
       <ChatMessageList
         messages={messages}
         username={username}
         loading={loading}
-        onPresetClick={handlePresetClick}
       />
 
-      {/* Username display and change button */}
-      {hasUsername && (
-        <div className="mb-4 text-sm text-kumo-strong">
-          Chatting as: <span className="font-medium text-kumo-default">{username}</span>{" "}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleChangeUsername}
-            className="text-kumo-link underline"
-          >
-            Change
-          </Button>
-        </div>
-      )}
+      {/* Preset prompts above input */}
+      <div className="mt-4 mb-2">
+        <PresetPrompts onSelect={handlePresetClick} disabled={loading || !hasUsername} />
+      </div>
 
+      {/* Chat input */}
       <ChatInput
         value={input}
         onChange={setInput}
@@ -426,14 +465,6 @@ export default function Home() {
         disabled={!hasUsername}
         loading={loading}
       />
-
-      {/* Preset prompts below the input when there are messages */}
-      {messages.length > 0 && (
-        <div className="mt-4">
-          <p className="text-sm text-kumo-strong mb-2">Try these prompts:</p>
-          <PresetPrompts onSelect={handlePresetClick} />
-        </div>
-      )}
     </ChatLayout>
   );
 }

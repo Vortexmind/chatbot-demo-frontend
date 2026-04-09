@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { Button, InputArea, Label } from "@cloudflare/kumo";
-import { Paperclip, X, File } from "@phosphor-icons/react";
+import { Button, InputArea, Loader } from "@cloudflare/kumo";
+import { Paperclip, X, File, PaperPlaneRight } from "@phosphor-icons/react";
 import type { Attachment } from "@/lib/types";
 import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE, MAX_FILES } from "@/lib/constants";
 
@@ -83,11 +83,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="space-y-3">
-      <Label htmlFor="chat-input" className="font-medium text-kumo-default">
-        Your message
-      </Label>
-
+    <div className="space-y-2">
       {/* Attachment previews */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 p-2 bg-kumo-recessed rounded">
@@ -121,23 +117,8 @@ export function ChatInput({
         </div>
       )}
 
-      {/* Input area with attachment button */}
-      <div className="flex gap-2 items-start">
-        <InputArea
-          id="chat-input"
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            disabled
-              ? "Please enter your username first"
-              : "Type a message and press Enter (Shift+Enter for new line)"
-          }
-          disabled={disabled}
-          rows={3}
-          className="flex-1"
-        />
+      {/* Input row: attach button, textarea, send button */}
+      <div className="flex gap-2 items-end">
         <input
           type="file"
           ref={fileInputRef}
@@ -155,20 +136,42 @@ export function ChatInput({
               ? `Max ${MAX_FILES} files`
               : "Attach file"
           }
+          className="flex-shrink-0"
         >
           <Paperclip weight="bold" className="h-5 w-5" />
         </Button>
-      </div>
 
-      {/* Send button */}
-      <Button
-        variant="primary"
-        className="w-full"
-        onClick={onSubmit}
-        disabled={!canSubmit}
-      >
-        {loading ? "Sending..." : "Send"}
-      </Button>
+        <InputArea
+          id="chat-input"
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            disabled
+              ? "Please enter your username first"
+              : "Type a message... (Enter to send, Shift+Enter for new line)"
+          }
+          disabled={disabled}
+          rows={2}
+          className="flex-1"
+        />
+
+        <Button
+          variant="primary"
+          size="base"
+          onClick={onSubmit}
+          disabled={!canSubmit}
+          aria-label="Send message"
+          className="flex-shrink-0"
+        >
+          {loading ? (
+            <Loader size="sm" className="text-kumo-inverse" />
+          ) : (
+            <PaperPlaneRight weight="fill" className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

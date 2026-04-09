@@ -2,22 +2,20 @@
 
 import { useRef, useEffect } from "react";
 import { Surface, Loader } from "@cloudflare/kumo";
+import { ChatCircle } from "@phosphor-icons/react";
 import { ChatMessage } from "./ChatMessage";
-import { PresetPrompts } from "./PresetPrompts";
 import type { Message } from "@/lib/types";
 
 type ChatMessageListProps = {
   messages: Message[];
   username: string;
   loading: boolean;
-  onPresetClick: (prompt: string) => void;
 };
 
 export function ChatMessageList({
   messages,
   username,
   loading,
-  onPresetClick,
 }: ChatMessageListProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -32,13 +30,16 @@ export function ChatMessageList({
   const showTypingIndicator = loading && !isStreaming;
 
   return (
-    <Surface className="h-80 overflow-y-auto rounded-lg p-4 mb-4 bg-kumo-recessed ring ring-kumo-line">
+    <Surface className="flex-1 min-h-[200px] overflow-y-auto rounded-lg p-4 bg-kumo-recessed ring ring-kumo-line">
       {isEmpty && !loading ? (
-        <div className="h-full flex flex-col items-center justify-center text-center">
-          <p className="text-kumo-strong mb-4">
-            Start a conversation or try one of these:
+        <div className="h-full flex flex-col items-center justify-center text-center py-12">
+          <ChatCircle weight="light" className="h-16 w-16 text-kumo-subtle mb-4" />
+          <p className="text-kumo-strong text-sm">
+            Send a message to get started
           </p>
-          <PresetPrompts onSelect={onPresetClick} centered />
+          <p className="text-kumo-subtle text-xs mt-1">
+            Or try one of the demo scenarios below
+          </p>
         </div>
       ) : (
         <>

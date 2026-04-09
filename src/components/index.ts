@@ -1,7 +1,6 @@
 export { ChatLayout } from "./ChatLayout";
 export { UsernameDialog } from "./UsernameDialog";
-export { AIGatewayPanel } from "./AIGatewayPanel";
-export { AIGatewayActivityPanel } from "./AIGatewayActivityPanel";
+export { AIGatewayDrawer } from "./AIGatewayDrawer";
 export { BlockedResponseCard } from "./BlockedResponseCard";
 export { ChatMessage } from "./ChatMessage";
 export { ChatMessageList } from "./ChatMessageList";
