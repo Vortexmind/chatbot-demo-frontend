@@ -1,9 +1,10 @@
 "use client";
 
 import { CloudflareLogo, Link, Button, Badge } from "@cloudflare/kumo";
-import { Sidebar, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { Sidebar, ArrowCounterClockwise, Robot, ChatCircle } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { DarkModeToggle } from "./DarkModeToggle";
+import type { ChatTab } from "@/lib/types";
 
 type ChatLayoutProps = {
   children: ReactNode;
@@ -16,6 +17,8 @@ type ChatLayoutProps = {
   drawerContent?: ReactNode;
   blockedCount?: number;
   onNewChat?: () => void;
+  activeTab?: ChatTab;
+  onTabChange?: (tab: ChatTab) => void;
 };
 
 export function ChatLayout({
@@ -29,6 +32,8 @@ export function ChatLayout({
   drawerContent,
   blockedCount = 0,
   onNewChat,
+  activeTab = "standard",
+  onTabChange,
 }: ChatLayoutProps) {
   return (
     <main className="h-screen bg-kumo-canvas flex flex-col overflow-hidden">
@@ -76,6 +81,36 @@ export function ChatLayout({
                 </p>
               </div>
             </div>
+
+            {/* Center: Tab switcher */}
+            {onTabChange && (
+              <div className="flex items-center bg-kumo-canvas rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={() => onTabChange("standard")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === "standard"
+                      ? "bg-kumo-base text-kumo-default shadow-sm"
+                      : "text-kumo-strong hover:text-kumo-default"
+                  }`}
+                >
+                  <ChatCircle weight={activeTab === "standard" ? "fill" : "regular"} className="h-4 w-4" />
+                  <span className="hidden sm:inline">Standard</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onTabChange("agent")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === "agent"
+                      ? "bg-kumo-base text-kumo-default shadow-sm"
+                      : "text-kumo-strong hover:text-kumo-default"
+                  }`}
+                >
+                  <Robot weight={activeTab === "agent" ? "fill" : "regular"} className="h-4 w-4" />
+                  <span className="hidden sm:inline">Agent</span>
+                </button>
+              </div>
+            )}
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2">

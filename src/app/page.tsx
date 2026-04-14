@@ -8,10 +8,11 @@ import {
   ChatMessageList,
   ChatInput,
   PresetPrompts,
+  AgentChatTab,
 } from "@/components";
 import { API_URL } from "@/lib/constants";
 import { getCookie } from "@/lib/utils";
-import type { Message, Attachment, AIGatewayInfo, ErrorResponse, AIGatewayEvent } from "@/lib/types";
+import type { Message, Attachment, AIGatewayInfo, ErrorResponse, AIGatewayEvent, ChatTab } from "@/lib/types";
 
 // Generate unique IDs for events
 let eventIdCounter = 0;
@@ -50,6 +51,7 @@ export default function Home() {
   const [aigEvents, setAigEvents] = useState<AIGatewayEvent[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ChatTab>("standard");
   
   // Ref to track streaming event ID for updating it when complete
   const streamingEventIdRef = useRef<string | null>(null);
@@ -83,6 +85,11 @@ export default function Home() {
     if (storedDrawer === "true") {
       setIsDrawerOpen(true);
     }
+
+    const storedTab = localStorage.getItem("chatbot_active_tab") as ChatTab | null;
+    if (storedTab === "standard" || storedTab === "agent") {
+      setActiveTab(storedTab);
+    }
   }, []);
 
   const handleDarkModeToggle = useCallback((isDark: boolean) => {
@@ -101,6 +108,11 @@ export default function Home() {
       localStorage.setItem("chatbot_drawer_open", newValue.toString());
       return newValue;
     });
+  }, []);
+
+  const handleTabChange = useCallback((tab: ChatTab) => {
+    setActiveTab(tab);
+    localStorage.setItem("chatbot_active_tab", tab);
   }, []);
 
   const addEvent = useCallback((event: Omit<AIGatewayEvent, "id" | "timestamp">) => {
@@ -441,7 +453,9 @@ export default function Home() {
       onDrawerToggle={handleDrawerToggle}
       drawerContent={drawerContent}
       blockedCount={blockedCount}
-      onNewChat={handleNewChat}
+      onNewChat={activeTab === "standard" ? handleNewChat : undefined}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
     >
       <UsernameDialog
         open={showUsernameDialog}
@@ -449,29 +463,35 @@ export default function Home() {
         onSubmit={handleUsernameSubmit}
       />
 
-      {/* Chat messages - flex-1 to fill available space */}
-      <ChatMessageList
-        messages={messages}
-        username={username}
-        loading={loading}
-      />
+      {activeTab === "standard" ? (
+        <>
+          {/* Chat messages - flex-1 to fill available space */}
+          <ChatMessageList
+            messages={messages}
+            username={username}
+            loading={loading}
+          />
 
-      {/* Preset prompts above input */}
-      <div className="mt-4 mb-2">
-        <PresetPrompts onSelect={handlePresetClick} disabled={loading || !hasUsername} />
-      </div>
+          {/* Preset prompts above input */}
+          <div className="mt-4 mb-2">
+            <PresetPrompts onSelect={handlePresetClick} disabled={loading || !hasUsername} />
+          </div>
 
-      {/* Chat input */}
-      <ChatInput
-        value={input}
-        onChange={setInput}
-        attachments={attachments}
-        onAttachmentAdd={handleAttachmentAdd}
-        onAttachmentRemove={handleAttachmentRemove}
-        onSubmit={handleSubmit}
-        disabled={!hasUsername}
-        loading={loading}
-      />
+          {/* Chat input */}
+          <ChatInput
+            value={input}
+            onChange={setInput}
+            attachments={attachments}
+            onAttachmentAdd={handleAttachmentAdd}
+            onAttachmentRemove={handleAttachmentRemove}
+            onSubmit={handleSubmit}
+            disabled={!hasUsername}
+            loading={loading}
+          />
+        </>
+      ) : (
+        <AgentChatTab />
+      )}
     </ChatLayout>
   );
 }

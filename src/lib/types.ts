@@ -49,3 +49,22 @@ export type AIGatewayEvent = {
   hasAttachment?: boolean;
   attachmentType?: string;
 };
+
+// MCP Types for Agent Tab
+export type MCPServerState = "disconnected" | "connecting" | "authenticating" | "ready" | "error";
+
+export type MCPServerInfo = {
+  id: string;
+  name: string;
+  state: MCPServerState;
+  authUrl?: string;
+  error?: string;
+};
+
+export type MCPToolInfo = {
+  name: string;
+  description?: string;
+  serverId: string;
+};
+
+export type ChatTab = "standard" | "agent";

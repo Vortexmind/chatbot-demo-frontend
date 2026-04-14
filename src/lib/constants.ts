@@ -2,6 +2,10 @@ import type { PresetPrompt } from "./types";
 
 export const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
 
+// Agent backend for MCP integration
+export const AGENT_HOST = "https://chatbot-demo-agent.homesecurity.rocks";
+export const AGENT_NAME = "chat-bot-agent";
+
 export const ACCEPTED_FILE_TYPES = [
   "image/png",
   "image/jpeg",

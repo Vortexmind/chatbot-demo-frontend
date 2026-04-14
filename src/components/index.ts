@@ -6,3 +6,6 @@ export { ChatMessageList } from "./ChatMessageList";
 export { ChatInput } from "./ChatInput";
 export { PresetPrompts } from "./PresetPrompts";
 export { DarkModeToggle } from "./DarkModeToggle";
+export { AgentChatTab } from "./AgentChatTab";
+export { AgentChatMessage } from "./AgentChatMessage";
+export { AgentChatInput } from "./AgentChatInput";
