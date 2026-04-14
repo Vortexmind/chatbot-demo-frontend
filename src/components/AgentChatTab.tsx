@@ -159,11 +159,19 @@ export function AgentChatTab() {
         );
 
         // Poll for popup close (OAuth callback will close it)
+        // Also set a max timeout in case something goes wrong
+        let pollCount = 0;
+        const maxPolls = 600; // 5 minutes max (600 * 500ms)
+        
         const checkClosed = setInterval(() => {
-          if (popup?.closed) {
+          pollCount++;
+          
+          if (popup?.closed || pollCount >= maxPolls) {
             clearInterval(checkClosed);
-            // Refresh MCP state after OAuth completes
-            refreshMcpState();
+            // Give a brief moment for the auth callback to process, then refresh state
+            setTimeout(() => {
+              refreshMcpState();
+            }, 500);
           }
         }, 500);
       } else if (result.state === "ready") {
@@ -184,13 +192,32 @@ export function AgentChatTab() {
       const state = await agent.call("getMcpState") as MCPServersState;
       const servers = Object.values(state?.servers || {});
       
-      if (servers.length > 0 && servers[0].state === "ready") {
-        setMcpState("ready");
-        setMcpError(null);
+      if (servers.length === 0) {
+        // No servers means disconnected (auth was cancelled or server removed)
+        setMcpState("disconnected");
+        setToolCount(0);
+      } else {
+        const server = servers[0];
+        if (server.state === "ready") {
+          setMcpState("ready");
+          setMcpError(null);
+          setToolCount(state?.tools?.length || 0);
+        } else if (server.state === "authenticating") {
+          // Still authenticating, keep current state
+          setMcpState("authenticating");
+        } else if (server.state === "error") {
+          setMcpState("error");
+          setMcpError(server.error || "Connection failed");
+        } else {
+          // Unknown state, reset to disconnected
+          setMcpState("disconnected");
+          setToolCount(0);
+        }
       }
-      setToolCount(state?.tools?.length || 0);
     } catch {
-      // Ignore refresh errors
+      // On error, reset to disconnected so user can retry
+      setMcpState("disconnected");
+      setToolCount(0);
     }
   }, [agent, agentConnectionState]);
 
@@ -283,15 +310,25 @@ export function AgentChatTab() {
       case "connecting":
       case "authenticating":
         return (
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled
-            className="gap-1.5"
-          >
-            <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
-            {mcpState === "authenticating" ? "Authenticating..." : "Connecting..."}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled
+              className="gap-1.5"
+            >
+              <CircleNotch weight="bold" className="h-4 w-4 animate-spin" />
+              {mcpState === "authenticating" ? "Authenticating..." : "Connecting..."}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDisconnect}
+              className="text-kumo-strong hover:text-kumo-default"
+            >
+              Cancel
+            </Button>
+          </div>
         );
       
       case "ready":
