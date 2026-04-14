@@ -6,20 +6,32 @@ Built with [Kumo](https://github.com/cloudflare/kumo), Cloudflare's open-source 
 
 ## Features
 
+### Standard Chat Tab
 - **AI Gateway Integration** - Displays model/provider routing info, highlights changes, shows block reasons
 - **Activity Timeline** - Collapsible panel showing all AI Gateway events (requests, responses, blocks)
 - **Block Differentiation** - Visual distinction between rate limits (orange) and content blocks (red) with detailed error info
 - **Preset Demo Prompts** - Clickable prompts to demonstrate AI Gateway guardrails (content policy, DLP)
-- **Dark Mode** - Toggle between light and dark themes with automatic persistence
 - **File Attachments** - Support for images and documents with automatic model routing
 - **Username-based Chat** - Users enter a username for per-user rate limiting in AI Gateway
+
+### Agent Chat Tab (MCP Integration)
+- **MCP Portal Connection** - Connect to external MCP servers for tool calling
+- **OAuth Authentication** - Popup-based OAuth flow for MCP portal auth
+- **Tool Execution** - AI can call MCP tools and display results inline
+- **Streaming Responses** - Real-time streaming with tool call visualization
+- **Connection State Management** - Shows connecting, authenticating, and ready states
+
+### Shared Features
+- **Dark Mode** - Toggle between light and dark themes with automatic persistence
 - **Cloudflare Access Auth** - Reads `CF_Authorization` cookie for backend authentication
+- **Tabbed Interface** - Switch between Standard Chat and Agent Chat modes
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 with App Router
 - **Styling**: [Kumo](https://github.com/cloudflare/kumo) (Cloudflare's design system) + Tailwind CSS v4
 - **Icons**: [Phosphor Icons](https://phosphoricons.com/)
+- **Agent SDK**: `agents` + `@cloudflare/ai-chat` + `ai` v6 (for Agent Chat tab)
 - **Deployment**: Cloudflare Workers via [OpenNext](https://opennext.js.org/)
 - **Package Manager**: pnpm
 
@@ -30,22 +42,24 @@ src/
 ├── app/
 │   ├── globals.css      # Kumo styles + markdown CSS
 │   ├── layout.tsx       # Root layout with Kumo theme
-│   └── page.tsx         # Main chat page (state management)
+│   └── page.tsx         # Main chat page (state management, tab switching)
 ├── components/
-│   ├── AIGatewayActivityPanel.tsx  # Event timeline
-│   ├── AIGatewayPanel.tsx          # Model/provider display
-│   ├── BlockedResponseCard.tsx     # Rich block display
-│   ├── ChatInput.tsx               # Input + attachments
-│   ├── ChatLayout.tsx              # Page shell + dark mode
-│   ├── ChatMessage.tsx             # Message bubbles
-│   ├── ChatMessageList.tsx         # Scrollable message area
-│   ├── DarkModeToggle.tsx          # Light/dark switch
-│   ├── PresetPrompts.tsx           # Demo prompt chips
-│   ├── UsernameDialog.tsx          # Username picker
-│   └── index.ts                    # Component exports
+│   ├── AgentChatTab.tsx          # Agent chat with MCP integration
+│   ├── AgentChatMessage.tsx      # Message rendering for AI SDK v6 parts
+│   ├── AgentChatInput.tsx        # Simple input for agent chat
+│   ├── AIGatewayDrawer.tsx       # Event timeline drawer
+│   ├── BlockedResponseCard.tsx   # Rich block display
+│   ├── ChatInput.tsx             # Input + attachments (standard chat)
+│   ├── ChatLayout.tsx            # Page shell + dark mode + tab switcher
+│   ├── ChatMessage.tsx           # Message bubbles (standard chat)
+│   ├── ChatMessageList.tsx       # Scrollable message area
+│   ├── DarkModeToggle.tsx        # Light/dark switch
+│   ├── PresetPrompts.tsx         # Demo prompt chips
+│   ├── UsernameDialog.tsx        # Username picker
+│   └── index.ts                  # Component exports
 └── lib/
-    ├── constants.ts     # API URL, file limits, presets
-    ├── types.ts         # TypeScript types
+    ├── constants.ts     # API URLs, agent config, file limits, presets
+    ├── types.ts         # TypeScript types including MCP types
     └── utils.ts         # Helper functions
 ```
 
@@ -85,10 +99,15 @@ pnpm dev
 
 ### Environment
 
-The backend API URL is configured in `src/lib/constants.ts`:
+Backend URLs are configured in `src/lib/constants.ts`:
 
 ```typescript
+// Standard chat API (stateless worker)
 export const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
+
+// Agent backend for MCP integration (Durable Object)
+export const AGENT_HOST = "https://chatbot-demo-agent.homesecurity.rocks";
+export const AGENT_NAME = "chat-bot-agent";
 ```
 
 ### Preset Prompts
@@ -108,10 +127,17 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
 
 ## Demo Workflow
 
+### Standard Chat Tab
 1. **Normal Request**: Send "What is 2+2?" to see dynamic model routing
 2. **Content Block**: Click "Violent story" to trigger a content policy block
 3. **Rate Limit**: Send multiple requests quickly to trigger per-user rate limiting
 4. **Activity Panel**: Expand to see the event timeline with model/provider info
+
+### Agent Chat Tab
+1. **Connect**: Click "Connect MCP" to initiate connection to MCP portal
+2. **Authenticate**: If prompted, complete OAuth in the popup window
+3. **Use Tools**: Ask questions that require tools (e.g., "search for X", "get weather")
+4. **Disconnect**: Click "Disconnect" to remove MCP server connection
 
 The Activity Panel shows:
 - Request timestamps and prompt previews
@@ -121,6 +147,8 @@ The Activity Panel shows:
 
 ## Related
 
-- [chatbot-demo](../chatbot-demo) - Backend Cloudflare Worker
+- [chatbot-demo-agent](../chatbot-demo-agent) - Agent backend for MCP integration
+- [chatbot-demo](../chatbot-demo) - Backend Cloudflare Worker (standard chat)
 - [Kumo](https://github.com/cloudflare/kumo) - Cloudflare's design system
 - [AI Gateway Docs](https://developers.cloudflare.com/ai-gateway/)
+- [Cloudflare Agents Docs](https://developers.cloudflare.com/agents/)
