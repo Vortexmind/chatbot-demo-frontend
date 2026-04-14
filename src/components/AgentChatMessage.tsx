@@ -1,6 +1,7 @@
 "use client";
 
 import { Wrench, CheckCircle, XCircle, CircleNotch } from "@phosphor-icons/react";
+import { isToolUIPart, getToolName } from "ai";
 import type { UIMessage } from "ai";
 import { SenderLabel } from "./SenderLabel";
 import { MessageBubble } from "./MessageBubble";
@@ -12,38 +13,12 @@ type AgentChatMessageProps = {
   isError?: boolean;
 };
 
-// Helper to check if a part is a static tool part (AI SDK v6 uses 'tool-${toolName}' pattern)
-function isStaticToolPart(part: UIMessage["parts"][number]): part is UIMessage["parts"][number] & {
-  type: `tool-${string}`;
-  toolInvocation: {
-    toolName: string;
-    toolCallId: string;
-    state: string;
-    args?: unknown;
-    result?: unknown;
-  };
-} {
-  return part.type.startsWith("tool-");
-}
-
-// Helper to check for dynamic tool part (MCP tools)
-function isDynamicToolPart(part: UIMessage["parts"][number]): part is UIMessage["parts"][number] & {
-  type: "dynamic-tool";
-  toolName: string;
-  toolCallId: string;
-  state: string;
-  args?: unknown;
-  result?: unknown;
-} {
-  return part.type === "dynamic-tool";
-}
-
 export function AgentChatMessage({ message, isStreaming, isError }: AgentChatMessageProps) {
   const isUser = message.role === "user";
 
   // Extract text content from parts
   const textParts = message.parts.filter(p => p.type === "text") as Array<{ type: "text"; text: string }>;
-  const toolParts = message.parts.filter(p => p.type.startsWith("tool-") || p.type === "dynamic-tool");
+  const toolParts = message.parts.filter(p => isToolUIPart(p));
 
   // Check if we have any displayable content
   const hasTextContent = textParts.some(p => p.text && p.text.trim().length > 0);
@@ -74,31 +49,17 @@ export function AgentChatMessage({ message, isStreaming, isError }: AgentChatMes
 
         {/* Tool invocations */}
         {toolParts.map((part, index) => {
-          if (isStaticToolPart(part)) {
-            const { toolInvocation } = part;
+          if (isToolUIPart(part)) {
             return (
               <ToolInvocationPart
                 key={index}
-                toolName={toolInvocation.toolName}
-                state={toolInvocation.state}
-                args={toolInvocation.args}
-                result={toolInvocation.result}
-              />
-            );
-          }
-
-          if (isDynamicToolPart(part)) {
-            return (
-              <ToolInvocationPart
-                key={index}
-                toolName={part.toolName}
+                toolName={getToolName(part)}
                 state={part.state}
-                args={part.args}
-                result={part.result}
+                input={part.input}
+                output={"output" in part ? part.output : undefined}
               />
             );
           }
-
           return null;
         })}
       </MessageBubble>
@@ -109,15 +70,15 @@ export function AgentChatMessage({ message, isStreaming, isError }: AgentChatMes
 type ToolInvocationPartProps = {
   toolName: string;
   state: string;
-  args?: unknown;
-  result?: unknown;
+  input?: unknown;
+  output?: unknown;
 };
 
-function ToolInvocationPart({ toolName, state, args, result }: ToolInvocationPartProps) {
-  // AI SDK v6 states: input-streaming, input-available, output-available, etc.
+function ToolInvocationPart({ toolName, state, input, output }: ToolInvocationPartProps) {
+  // AI SDK v6 states: input-streaming, input-available, output-available, output-error
   const isRunning = state === "input-streaming" || state === "input-available";
   const isComplete = state === "output-available";
-  const hasError = isComplete && result === undefined;
+  const hasError = state === "output-error" || (isComplete && output === undefined);
 
   return (
     <div className={`my-2 p-3 rounded-lg bg-kumo-canvas border ${hasError ? "border-kumo-danger-subtle" : "border-kumo-line"}`}>
@@ -128,7 +89,7 @@ function ToolInvocationPart({ toolName, state, args, result }: ToolInvocationPar
         {isRunning && (
           <CircleNotch weight="bold" className="h-4 w-4 text-kumo-accent animate-spin ml-auto" />
         )}
-        {isComplete && result !== undefined && (
+        {isComplete && output !== undefined && (
           <CheckCircle weight="fill" className="h-4 w-4 text-green-500 ml-auto" />
         )}
         {hasError && (
@@ -136,26 +97,26 @@ function ToolInvocationPart({ toolName, state, args, result }: ToolInvocationPar
         )}
       </div>
 
-      {/* Show args for debugging (collapsed by default) */}
-      {args !== undefined && args !== null && typeof args === "object" && Object.keys(args as Record<string, unknown>).length > 0 ? (
+      {/* Show input for debugging (collapsed by default) */}
+      {input !== undefined && input !== null && typeof input === "object" && Object.keys(input as Record<string, unknown>).length > 0 ? (
         <details className="mt-2">
           <summary className="text-xs text-kumo-subtle cursor-pointer hover:text-kumo-strong">
-            Arguments
+            Input
           </summary>
           <pre className="mt-1 text-xs bg-kumo-base p-2 rounded overflow-x-auto">
-            {JSON.stringify(args, null, 2)}
+            {JSON.stringify(input, null, 2)}
           </pre>
         </details>
       ) : null}
 
-      {/* Show result if available */}
-      {isComplete && result !== undefined && (
+      {/* Show output if available */}
+      {isComplete && output !== undefined && (
         <details className="mt-2">
           <summary className="text-xs text-kumo-subtle cursor-pointer hover:text-kumo-strong">
-            Result
+            Output
           </summary>
           <pre className="mt-1 text-xs bg-kumo-base p-2 rounded overflow-x-auto max-h-32">
-            {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
+            {typeof output === "string" ? output : JSON.stringify(output, null, 2)}
           </pre>
         </details>
       )}
