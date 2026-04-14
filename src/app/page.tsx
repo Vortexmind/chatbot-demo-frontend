@@ -242,11 +242,17 @@ export default function Home() {
         setTimeout(() => setAigHighlight(false), 1500);
 
         // Create a blocked message with structured info
+        // Use a simple, clean message in the chat - details are in the debug panel
+        const isRateLimit = response.status === 429;
+        const chatText = isRateLimit
+          ? "Sorry, too many requests. Please try again later."
+          : "Sorry, I can't help with that.";
+
         setMessages((prev) => [
           ...prev,
           {
             sender: "bot",
-            text: "Sorry, I'm unable to process your request at this time.",
+            text: chatText,
             blocked: {
               httpStatus: response.status,
               code: errorInfo?.code,
@@ -393,9 +399,10 @@ export default function Home() {
         streamingEventIdRef.current = null;
       }
 
+      // Use a simple, clean error message in the chat - details are in the debug panel
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "Error: Could not reach chatbot." },
+        { sender: "bot", text: "Sorry, something went wrong. Please try again.", blocked: { httpStatus: 0 } },
       ]);
     } finally {
       setLoading(false);

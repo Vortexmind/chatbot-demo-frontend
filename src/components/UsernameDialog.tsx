@@ -31,10 +31,10 @@ export function UsernameDialog({ open, initialUsername = "", onSubmit }: Usernam
   return (
     <Dialog.Root open={open}>
       <Dialog className="p-6">
-        <Dialog.Title className="text-xl font-semibold text-kumo-default mb-2">
+        <Dialog.Title className="text-2xl font-semibold text-kumo-default mb-2">
           Welcome! What&apos;s your name?
         </Dialog.Title>
-        <Dialog.Description className="text-sm text-kumo-strong mb-4">
+        <Dialog.Description className="text-base text-kumo-strong mb-4">
           Enter a username to start chatting
         </Dialog.Description>
 
@@ -47,7 +47,7 @@ export function UsernameDialog({ open, initialUsername = "", onSubmit }: Usernam
           autoFocus
         />
 
-        <p className="text-sm text-kumo-strong mb-2">Or pick a suggested username:</p>
+        <p className="text-base text-kumo-strong mb-2">Or pick a suggested username:</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {suggestions.map((name) => (
             <Button

@@ -10,7 +10,7 @@ export function PresetPrompts({ onSelect, disabled = false }: PresetPromptsProps
   return (
     <TooltipProvider>
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-kumo-strong">Demo scenarios:</span>
+        <span className="text-sm text-kumo-strong">Demo scenarios:</span>
         {PRESET_PROMPTS.map((preset) => (
           <Tooltip
             key={preset.label}

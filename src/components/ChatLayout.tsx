@@ -36,27 +36,44 @@ export function ChatLayout({
       <header className="flex-shrink-0 border-b border-kumo-line bg-kumo-base px-4 py-3 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between">
-            {/* Left: Title and username */}
-            <div className="flex items-center gap-4">
-              <div>
-                <h1 className="text-xl font-semibold text-kumo-default">
+            {/* Left: Logo + Title stack */}
+            <div className="flex items-center gap-3">
+              <CloudflareLogo variant="glyph" className="h-10 w-10 flex-shrink-0" />
+              <div className="space-y-0.5">
+                <h1 className="text-2xl font-semibold text-kumo-default">
                   Well-behaved chatbot
                 </h1>
                 {username && (
-                  <p className="text-xs text-kumo-strong">
+                  <p className="text-sm text-kumo-strong">
                     Chatting as{" "}
                     <span className="font-medium text-kumo-default">{username}</span>
                     {onChangeUsername && (
-                      <button
-                        type="button"
-                        onClick={onChangeUsername}
-                        className="ml-1 text-kumo-link underline hover:text-kumo-link-hover"
-                      >
-                        Change
-                      </button>
+                      <>
+                        <span className="mx-1.5 text-kumo-subtle">·</span>
+                        <button
+                          type="button"
+                          onClick={onChangeUsername}
+                          className="text-kumo-link underline hover:text-kumo-link-hover"
+                        >
+                          Change
+                        </button>
+                      </>
                     )}
                   </p>
                 )}
+                <p className="text-sm text-kumo-strong">
+                  <Link href="https://developers.cloudflare.com/workers-ai/" className="text-kumo-link hover:underline">
+                    Workers AI
+                  </Link>
+                  <span className="mx-1">+</span>
+                  <Link href="https://developers.cloudflare.com/ai-gateway/" className="text-kumo-link hover:underline">
+                    AI Gateway
+                  </Link>
+                  <span className="mx-1.5 text-kumo-subtle">|</span>
+                  <Link href="https://github.com/cloudflare/kumo" className="text-kumo-link hover:underline">
+                    Kumo
+                  </Link>
+                </p>
               </div>
             </div>
 
@@ -88,25 +105,8 @@ export function ChatLayout({
                 )}
               </Button>
               <DarkModeToggle isDark={isDarkMode} onToggle={onDarkModeToggle} />
-              <CloudflareLogo variant="glyph" className="h-8 w-8" />
             </div>
           </div>
-
-          {/* Subtitle */}
-          <p className="mt-1 text-xs text-kumo-strong">
-            Built with{" "}
-            <Link href="https://developers.cloudflare.com/workers-ai/" className="text-kumo-link">
-              Workers AI
-            </Link>
-            {" + "}
-            <Link href="https://developers.cloudflare.com/ai-gateway/" className="text-kumo-link">
-              AI Gateway
-            </Link>
-            {" | Styled with "}
-            <Link href="https://github.com/cloudflare/kumo" className="text-kumo-link">
-              Kumo
-            </Link>
-          </p>
         </div>
       </header>
 
@@ -128,11 +128,11 @@ export function ChatLayout({
         {/* AI Gateway Drawer */}
         <div
           className={`flex-shrink-0 border-l border-kumo-line bg-kumo-base transition-all duration-300 overflow-hidden ${
-            isDrawerOpen ? "w-96" : "w-0"
+            isDrawerOpen ? "w-[28rem]" : "w-0"
           }`}
         >
           {isDrawerOpen && (
-            <div className="w-96 h-full flex flex-col overflow-hidden">
+            <div className="w-[28rem] h-full flex flex-col overflow-hidden">
               {drawerContent}
             </div>
           )}

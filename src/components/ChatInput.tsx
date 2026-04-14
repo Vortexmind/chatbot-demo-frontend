@@ -90,7 +90,7 @@ export function ChatInput({
           {attachments.map((att, index) => (
             <div
               key={index}
-              className="flex items-center gap-1 px-2 py-1 bg-kumo-base rounded ring ring-kumo-line text-sm"
+              className="flex items-center gap-1 px-2 py-1 bg-kumo-base rounded ring ring-kumo-line text-base"
             >
               {att.mimeType.startsWith("image/") ? (
                 <img

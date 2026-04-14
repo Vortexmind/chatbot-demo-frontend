@@ -24,7 +24,7 @@
   background-color: var(--color-kumo-recessed);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .markdown-content pre {
@@ -63,19 +63,19 @@
 }
 
 .markdown-content h1 {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: bold;
   margin: 0.5rem 0;
 }
 
 .markdown-content h2 {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: bold;
   margin: 0.5rem 0;
 }
 
 .markdown-content h3 {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: bold;
   margin: 0.25rem 0;
 }

@@ -34,10 +34,10 @@ export function ChatMessageList({
       {isEmpty && !loading ? (
         <div className="h-full flex flex-col items-center justify-center text-center py-12">
           <ChatCircle weight="light" className="h-16 w-16 text-kumo-subtle mb-4" />
-          <p className="text-kumo-strong text-sm">
+          <p className="text-kumo-strong text-base">
             Send a message to get started
           </p>
-          <p className="text-kumo-subtle text-xs mt-1">
+          <p className="text-kumo-subtle text-sm mt-1">
             Or try one of the demo scenarios below
           </p>
         </div>
