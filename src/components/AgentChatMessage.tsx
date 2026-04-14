@@ -1,12 +1,15 @@
 "use client";
 
-import { CloudflareLogo } from "@cloudflare/kumo";
-import { User, Wrench, CheckCircle, XCircle, CircleNotch } from "@phosphor-icons/react";
-import ReactMarkdown from "react-markdown";
+import { Wrench, CheckCircle, XCircle, CircleNotch } from "@phosphor-icons/react";
 import type { UIMessage } from "ai";
+import { SenderLabel } from "./SenderLabel";
+import { MessageBubble } from "./MessageBubble";
+import { MarkdownContent } from "./MarkdownContent";
 
 type AgentChatMessageProps = {
   message: UIMessage;
+  isStreaming?: boolean;
+  isError?: boolean;
 };
 
 // Helper to check if a part is a static tool part (AI SDK v6 uses 'tool-${toolName}' pattern)
@@ -35,55 +38,42 @@ function isDynamicToolPart(part: UIMessage["parts"][number]): part is UIMessage[
   return part.type === "dynamic-tool";
 }
 
-export function AgentChatMessage({ message }: AgentChatMessageProps) {
+export function AgentChatMessage({ message, isStreaming, isError }: AgentChatMessageProps) {
   const isUser = message.role === "user";
-  
-  // Debug: log message structure in development
-  if (process.env.NODE_ENV === "development") {
-    console.log("AgentChatMessage:", { role: message.role, parts: message.parts });
-  }
 
   // Extract text content from parts
   const textParts = message.parts.filter(p => p.type === "text") as Array<{ type: "text"; text: string }>;
   const toolParts = message.parts.filter(p => p.type.startsWith("tool-") || p.type === "dynamic-tool");
-  
+
   // Check if we have any displayable content
   const hasTextContent = textParts.some(p => p.text && p.text.trim().length > 0);
   const hasToolContent = toolParts.length > 0;
-  
+
   // If no content at all, don't render empty bubble
   if (!hasTextContent && !hasToolContent) {
     return null;
   }
 
+  // Combine all text parts into a single string
+  const combinedText = textParts
+    .map(p => p.text)
+    .filter(Boolean)
+    .join("\n");
+
   return (
-    <div
-      className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}
-    >
-      {/* Avatar for assistant */}
-      {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-kumo-accent flex items-center justify-center">
-          <CloudflareLogo variant="glyph" className="h-5 w-5 text-white" />
-        </div>
-      )}
+    <div className={`my-3 ${isUser ? "text-right" : "text-left"}`}>
+      {/* Sender label with icon */}
+      <SenderLabel isUser={isUser} />
 
-      <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-          isUser
-            ? "bg-kumo-brand text-kumo-inverse rounded-br-md"
-            : "bg-kumo-base text-kumo-default ring ring-kumo-line rounded-bl-md"
-        }`}
-      >
-        {message.parts.map((part, index) => {
-          if (part.type === "text" && part.text && part.text.trim()) {
-            return (
-              <div key={index} className="markdown-content">
-                <ReactMarkdown>{part.text}</ReactMarkdown>
-              </div>
-            );
-          }
+      {/* Message bubble */}
+      <MessageBubble isUser={isUser} isError={isError}>
+        {/* Text content */}
+        {hasTextContent && (
+          <MarkdownContent text={combinedText} isStreaming={isStreaming && !isUser} />
+        )}
 
-          // Handle AI SDK v6 static tool invocations (type: 'tool-${toolName}')
+        {/* Tool invocations */}
+        {toolParts.map((part, index) => {
           if (isStaticToolPart(part)) {
             const { toolInvocation } = part;
             return (
@@ -97,7 +87,6 @@ export function AgentChatMessage({ message }: AgentChatMessageProps) {
             );
           }
 
-          // Handle dynamic tool invocations (MCP tools)
           if (isDynamicToolPart(part)) {
             return (
               <ToolInvocationPart
@@ -110,17 +99,9 @@ export function AgentChatMessage({ message }: AgentChatMessageProps) {
             );
           }
 
-          // Skip other part types (reasoning, source, file, etc.)
           return null;
         })}
-      </div>
-
-      {/* Avatar for user */}
-      {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-kumo-strong flex items-center justify-center">
-          <User weight="bold" className="h-4 w-4 text-kumo-canvas" />
-        </div>
-      )}
+      </MessageBubble>
     </div>
   );
 }
@@ -136,20 +117,21 @@ function ToolInvocationPart({ toolName, state, args, result }: ToolInvocationPar
   // AI SDK v6 states: input-streaming, input-available, output-available, etc.
   const isRunning = state === "input-streaming" || state === "input-available";
   const isComplete = state === "output-available";
+  const hasError = isComplete && result === undefined;
 
   return (
-    <div className="my-2 p-3 rounded-lg bg-kumo-canvas border border-kumo-line">
+    <div className={`my-2 p-3 rounded-lg bg-kumo-canvas border ${hasError ? "border-kumo-danger-subtle" : "border-kumo-line"}`}>
       <div className="flex items-center gap-2 text-sm">
         <Wrench weight="bold" className="h-4 w-4 text-kumo-accent" />
         <span className="font-medium text-kumo-default">{toolName}</span>
-        
+
         {isRunning && (
           <CircleNotch weight="bold" className="h-4 w-4 text-kumo-accent animate-spin ml-auto" />
         )}
         {isComplete && result !== undefined && (
           <CheckCircle weight="fill" className="h-4 w-4 text-green-500 ml-auto" />
         )}
-        {isComplete && result === undefined && (
+        {hasError && (
           <XCircle weight="fill" className="h-4 w-4 text-red-500 ml-auto" />
         )}
       </div>

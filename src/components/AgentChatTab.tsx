@@ -399,9 +399,20 @@ export function AgentChatTab() {
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((message: UIMessage) => (
-              <AgentChatMessage key={message.id} message={message} />
-            ))}
+            {messages.map((message: UIMessage, index: number) => {
+              // Show streaming cursor on the last assistant message while streaming
+              const isLastMessage = index === messages.length - 1;
+              const isAssistant = message.role === "assistant";
+              const showStreaming = isStreaming && isLastMessage && isAssistant;
+              
+              return (
+                <AgentChatMessage
+                  key={message.id}
+                  message={message}
+                  isStreaming={showStreaming}
+                />
+              );
+            })}
             <div ref={messagesEndRef} />
           </div>
         )}
