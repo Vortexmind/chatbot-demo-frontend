@@ -70,14 +70,14 @@ export function AgentChatMessage({ message }: AgentChatMessageProps) {
       <div
         className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
           isUser
-            ? "bg-kumo-accent text-white rounded-br-md"
-            : "bg-kumo-base border border-kumo-line text-kumo-default rounded-bl-md"
+            ? "bg-kumo-brand text-kumo-inverse rounded-br-md"
+            : "bg-kumo-base text-kumo-default ring ring-kumo-line rounded-bl-md"
         }`}
       >
         {message.parts.map((part, index) => {
           if (part.type === "text" && part.text && part.text.trim()) {
             return (
-              <div key={index} className="prose prose-sm max-w-none dark:prose-invert">
+              <div key={index} className="markdown-content">
                 <ReactMarkdown>{part.text}</ReactMarkdown>
               </div>
             );
