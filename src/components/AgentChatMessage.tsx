@@ -9,19 +9,52 @@ type AgentChatMessageProps = {
   message: UIMessage;
 };
 
-// Helper to check if a part is a tool-related part
-function isToolPart(part: UIMessage["parts"][number]): part is UIMessage["parts"][number] & {
+// Helper to check if a part is a static tool part (AI SDK v6 uses 'tool-${toolName}' pattern)
+function isStaticToolPart(part: UIMessage["parts"][number]): part is UIMessage["parts"][number] & {
+  type: `tool-${string}`;
+  toolInvocation: {
+    toolName: string;
+    toolCallId: string;
+    state: string;
+    args?: unknown;
+    result?: unknown;
+  };
+} {
+  return part.type.startsWith("tool-");
+}
+
+// Helper to check for dynamic tool part (MCP tools)
+function isDynamicToolPart(part: UIMessage["parts"][number]): part is UIMessage["parts"][number] & {
+  type: "dynamic-tool";
   toolName: string;
   toolCallId: string;
   state: string;
-  input?: unknown;
-  output?: unknown;
+  args?: unknown;
+  result?: unknown;
 } {
-  return part.type === "dynamic-tool" || part.type.startsWith("tool-");
+  return part.type === "dynamic-tool";
 }
 
 export function AgentChatMessage({ message }: AgentChatMessageProps) {
   const isUser = message.role === "user";
+  
+  // Debug: log message structure in development
+  if (process.env.NODE_ENV === "development") {
+    console.log("AgentChatMessage:", { role: message.role, parts: message.parts });
+  }
+
+  // Extract text content from parts
+  const textParts = message.parts.filter(p => p.type === "text") as Array<{ type: "text"; text: string }>;
+  const toolParts = message.parts.filter(p => p.type.startsWith("tool-") || p.type === "dynamic-tool");
+  
+  // Check if we have any displayable content
+  const hasTextContent = textParts.some(p => p.text && p.text.trim().length > 0);
+  const hasToolContent = toolParts.length > 0;
+  
+  // If no content at all, don't render empty bubble
+  if (!hasTextContent && !hasToolContent) {
+    return null;
+  }
 
   return (
     <div
@@ -42,7 +75,7 @@ export function AgentChatMessage({ message }: AgentChatMessageProps) {
         }`}
       >
         {message.parts.map((part, index) => {
-          if (part.type === "text") {
+          if (part.type === "text" && part.text && part.text.trim()) {
             return (
               <div key={index} className="prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown>{part.text}</ReactMarkdown>
@@ -50,19 +83,29 @@ export function AgentChatMessage({ message }: AgentChatMessageProps) {
             );
           }
 
-          if (isToolPart(part)) {
-            // Extract tool name from type (e.g., "tool-search" -> "search") or use toolName
-            const toolName = part.type === "dynamic-tool" 
-              ? part.toolName 
-              : part.type.replace(/^tool-/, "");
-            
+          // Handle AI SDK v6 static tool invocations (type: 'tool-${toolName}')
+          if (isStaticToolPart(part)) {
+            const { toolInvocation } = part;
             return (
               <ToolInvocationPart
                 key={index}
-                toolName={toolName}
+                toolName={toolInvocation.toolName}
+                state={toolInvocation.state}
+                args={toolInvocation.args}
+                result={toolInvocation.result}
+              />
+            );
+          }
+
+          // Handle dynamic tool invocations (MCP tools)
+          if (isDynamicToolPart(part)) {
+            return (
+              <ToolInvocationPart
+                key={index}
+                toolName={part.toolName}
                 state={part.state}
-                args={part.input}
-                result={part.output}
+                args={part.args}
+                result={part.result}
               />
             );
           }

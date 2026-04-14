@@ -11,11 +11,13 @@ import { AgentChatMessage } from "./AgentChatMessage";
 import { AgentChatInput } from "./AgentChatInput";
 import type { UIMessage } from "ai";
 
-type MCPState = {
+// MCP servers state from the agents SDK
+type MCPServersState = {
   servers: Record<string, {
     name: string;
     state: string;
     server_url?: string;
+    error?: string | null;
   }>;
   tools: Array<{
     name: string;
@@ -42,11 +44,12 @@ export function AgentChatTab() {
 
   // Connect to the agent via WebSocket
   // CF Access JWT is sent automatically via cookies (credentials: include)
-  const agent = useAgent<MCPState>({
+  // Use onMcpUpdate (not onStateUpdate) for MCP server state changes
+  const agent = useAgent({
     host: AGENT_HOST,
     agent: AGENT_NAME,
-    onStateUpdate: (state: MCPState) => {
-      // Update MCP state when agent broadcasts updates
+    onMcpUpdate: (state: MCPServersState) => {
+      // Update MCP state when agent broadcasts MCP server updates
       const servers = Object.values(state?.servers || {});
       if (servers.length > 0) {
         const server = servers[0];
@@ -57,8 +60,14 @@ export function AgentChatTab() {
           setMcpState("authenticating");
         } else if (server.state === "error") {
           setMcpState("error");
-          setMcpError("Connection failed");
+          setMcpError(server.error || "Connection failed");
+        } else if (server.state === "discovering") {
+          setMcpState("connecting");
         }
+      } else {
+        // No servers means disconnected
+        setMcpState("disconnected");
+        setToolCount(0);
       }
       // Update tool count
       setToolCount(state?.tools?.length || 0);
@@ -76,10 +85,23 @@ export function AgentChatTab() {
 
     // Wait for the agent to be ready
     agent.ready
-      .then(() => {
+      .then(async () => {
         if (mounted) {
           setAgentConnectionState("connected");
           setAgentError(null);
+          
+          // Check if MCP is already authenticated from a previous session
+          try {
+            const state = await agent.call("getMcpState") as MCPServersState;
+            const servers = Object.values(state?.servers || {});
+            if (servers.length > 0 && servers[0].state === "ready") {
+              setMcpState("ready");
+              setMcpError(null);
+              setToolCount(state?.tools?.length || 0);
+            }
+          } catch {
+            // Ignore errors when checking initial MCP state
+          }
         }
       })
       .catch((err: Error) => {
@@ -159,7 +181,7 @@ export function AgentChatTab() {
     if (!agent || agentConnectionState !== "connected") return;
 
     try {
-      const state = await agent.call("getMcpState") as MCPState;
+      const state = await agent.call("getMcpState") as MCPServersState;
       const servers = Object.values(state?.servers || {});
       
       if (servers.length > 0 && servers[0].state === "ready") {
@@ -319,14 +341,9 @@ export function AgentChatTab() {
     <div className="flex flex-col h-full">
       {/* MCP Connection Status Bar */}
       <div className="flex-shrink-0 py-3 px-4 border-b border-kumo-line bg-kumo-canvas/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-kumo-strong">
-            Agent Chat with MCP Tools
-          </span>
-          <Badge variant="blue" className="text-xs">
-            Connected
-          </Badge>
-        </div>
+        <span className="text-sm text-kumo-strong">
+          Agent Chat with MCP Tools
+        </span>
         {renderMcpConnectionStatus()}
       </div>
 
