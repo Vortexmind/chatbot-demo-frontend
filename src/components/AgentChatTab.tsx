@@ -50,23 +50,40 @@ export function AgentChatTab() {
     agent: AGENT_NAME,
     onMcpUpdate: (state: MCPServersState) => {
       // Update MCP state when agent broadcasts MCP server updates
+      console.log("[AgentChatTab] onMcpUpdate:", state);
       const servers = Object.values(state?.servers || {});
       if (servers.length > 0) {
         const server = servers[0];
-        if (server.state === "ready") {
-          setMcpState("ready");
-          setMcpError(null);
-        } else if (server.state === "authenticating") {
-          setMcpState("authenticating");
-        } else if (server.state === "error") {
-          setMcpState("error");
-          setMcpError(server.error || "Connection failed");
-        } else if (server.state === "discovering") {
-          setMcpState("connecting");
+        switch (server.state) {
+          case "ready":
+          case "connected":
+            setMcpState("ready");
+            setMcpError(null);
+            break;
+          case "authenticating":
+            setMcpState("authenticating");
+            break;
+          case "discovering":
+          case "connecting":
+            setMcpState("connecting");
+            break;
+          case "error":
+          case "failed":
+            setMcpState("error");
+            setMcpError(server.error || "Connection failed");
+            break;
+          default:
+            // Unknown transient state — leave UI as-is rather than flipping to disconnected
+            console.warn(
+              "[AgentChatTab] unhandled server state:",
+              server.state
+            );
+            break;
         }
       } else {
-        // No servers means disconnected
-        setMcpState("disconnected");
+        // No servers: preserve an error state so the user sees the failure
+        // instead of having it immediately overwritten with 'disconnected'.
+        setMcpState((prev) => (prev === "error" ? "error" : "disconnected"));
         setToolCount(0);
       }
       // Update tool count
@@ -138,36 +155,46 @@ export function AgentChatTab() {
   // Handle MCP connection
   const handleConnect = useCallback(async () => {
     if (!agent || agentConnectionState !== "connected") return;
-    
+
+    // Open the popup synchronously to preserve the user-gesture token.
+    // We'll navigate it to the real authorization URL once we have it.
+    const popup = window.open(
+      "about:blank",
+      "mcp-auth",
+      "width=600,height=700,left=200,top=100"
+    );
+    if (!popup) {
+      setMcpState("error");
+      setMcpError("Popup blocked. Please allow popups for this site and retry.");
+      return;
+    }
+
     setMcpState("connecting");
     setMcpError(null);
 
     try {
-      const result = await agent.call("connectMcpPortal") as {
+      const result = (await agent.call("connectMcpPortal")) as {
         state: string;
         id?: string;
         authUrl?: string;
+        error?: string;
       };
+
+      console.log("[AgentChatTab] connectMcpPortal result:", result);
 
       if (result.state === "authenticating" && result.authUrl) {
         setMcpState("authenticating");
-        
-        // Open OAuth popup
-        const popup = window.open(
-          result.authUrl,
-          "mcp-auth",
-          "width=600,height=700,left=200,top=100"
-        );
+        popup.location.href = result.authUrl;
 
         // Poll for popup close (OAuth callback will close it)
         // Also set a max timeout in case something goes wrong
         let pollCount = 0;
         const maxPolls = 600; // 5 minutes max (600 * 500ms)
-        
+
         const checkClosed = setInterval(() => {
           pollCount++;
-          
-          if (popup?.closed || pollCount >= maxPolls) {
+
+          if (popup.closed || pollCount >= maxPolls) {
             clearInterval(checkClosed);
             // Give a brief moment for the auth callback to process, then refresh state
             setTimeout(() => {
@@ -176,10 +203,21 @@ export function AgentChatTab() {
           }
         }, 500);
       } else if (result.state === "ready") {
+        popup.close();
         setMcpState("ready");
         refreshMcpState();
+      } else if (result.state === "error") {
+        popup.close();
+        setMcpState("error");
+        setMcpError(result.error || "Connection failed");
+      } else {
+        popup.close();
+        setMcpState("error");
+        setMcpError(`Unexpected connection state: ${result.state}`);
       }
     } catch (err) {
+      console.error("[AgentChatTab] handleConnect error:", err);
+      popup.close();
       setMcpState("error");
       setMcpError(err instanceof Error ? err.message : "Connection failed");
     }
