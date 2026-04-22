@@ -123,6 +123,7 @@ export function AgentChatTab() {
     sendMessage,
     clearHistory,
     isStreaming,
+    addToolApprovalResponse,
   } = useAgentChat({
     agent,
     getInitialMessages: null, // Skip initial fetch - we'll load messages after connection
@@ -132,7 +133,7 @@ export function AgentChatTab() {
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isStreaming]);
 
   // Handle MCP connection
   const handleConnect = useCallback(async () => {
@@ -242,6 +243,16 @@ export function AgentChatTab() {
     sendMessage({ text: trimmed });
     setInput("");
   }, [input, isStreaming, sendMessage, agentConnectionState]);
+
+  // Handle tool approval
+  const handleToolApprove = useCallback((approvalId: string) => {
+    addToolApprovalResponse({ id: approvalId, approved: true });
+  }, [addToolApprovalResponse]);
+
+  // Handle tool denial
+  const handleToolDeny = useCallback((approvalId: string) => {
+    addToolApprovalResponse({ id: approvalId, approved: false });
+  }, [addToolApprovalResponse]);
 
   // Retry agent connection
   const handleRetryConnection = useCallback(() => {
@@ -410,6 +421,8 @@ export function AgentChatTab() {
                   key={message.id}
                   message={message}
                   isStreaming={showStreaming}
+                  onApprove={handleToolApprove}
+                  onDeny={handleToolDeny}
                 />
               );
             })}
