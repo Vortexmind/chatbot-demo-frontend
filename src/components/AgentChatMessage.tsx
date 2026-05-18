@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Wrench,
   CheckCircle,
@@ -45,6 +45,8 @@ type AgentChatMessageProps = {
   message: UIMessage;
   isStreaming?: boolean;
   isError?: boolean;
+  streamStalled?: boolean;
+  onRetry?: () => void;
   onApprove?: (approvalId: string) => void;
   onDeny?: (approvalId: string) => void;
 };
@@ -162,6 +164,8 @@ export function AgentChatMessage({
   message,
   isStreaming,
   isError,
+  streamStalled,
+  onRetry,
   onApprove,
   onDeny,
 }: AgentChatMessageProps) {
@@ -224,7 +228,7 @@ export function AgentChatMessage({
               <MarkdownContent
                 key={index}
                 text={textPart.text}
-                isStreaming={partIsStreaming && !isUser}
+                isStreaming={partIsStreaming && !isUser && !streamStalled}
               />
             );
           }
@@ -235,15 +239,11 @@ export function AgentChatMessage({
             if (!reasoningPart.text?.trim()) return null;
 
             return (
-              <details key={index} className="my-2">
-                <summary className="flex items-center gap-1.5 text-xs text-kumo-subtle cursor-pointer hover:text-kumo-strong">
-                  <Brain weight="bold" className="h-3.5 w-3.5" />
-                  Reasoning
-                </summary>
-                <div className="mt-1 pl-5 text-sm text-kumo-strong border-l-2 border-kumo-line">
-                  <MarkdownContent text={reasoningPart.text} />
-                </div>
-              </details>
+              <ReasoningPart
+                key={index}
+                text={reasoningPart.text}
+                isStreaming={isStreaming}
+              />
             );
           }
 
@@ -330,6 +330,23 @@ export function AgentChatMessage({
           return null;
         })}
 
+        {/* Stream stalled warning */}
+        {streamStalled && (
+          <div className="mt-2 p-2 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
+            <span className="text-sm text-amber-800 dark:text-amber-200">
+              Response may be incomplete.
+            </span>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="px-2 py-1 text-sm rounded border border-kumo-line bg-kumo-base text-kumo-default hover:bg-kumo-hover transition-colors"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Debug panel (collapsible) - only in development */}
         {process.env.NODE_ENV === "development" && !isUser && (
           <div className="mt-3 pt-2 border-t border-kumo-line border-dashed">
@@ -390,6 +407,38 @@ export function AgentChatMessage({
         )}
       </MessageBubble>
     </div>
+  );
+}
+
+type ReasoningPartProps = {
+  text: string;
+  isStreaming?: boolean;
+};
+
+function ReasoningPart({ text, isStreaming }: ReasoningPartProps) {
+  const [open, setOpen] = useState(isStreaming ?? false);
+
+  useEffect(() => {
+    if (isStreaming) {
+      setOpen(true);
+    } else {
+      const timer = setTimeout(() => {
+        setOpen(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isStreaming]);
+
+  return (
+    <details className="my-2" open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
+      <summary className="flex items-center gap-1.5 text-xs text-kumo-subtle cursor-pointer hover:text-kumo-strong">
+        <Brain weight="bold" className="h-3.5 w-3.5" />
+        Reasoning
+      </summary>
+      <div className="mt-1 pl-5 text-sm text-kumo-strong border-l-2 border-kumo-line">
+        <MarkdownContent text={text} />
+      </div>
+    </details>
   );
 }
 
@@ -456,6 +505,14 @@ function ToolInvocationPart({ part, onApprove, onDeny }: ToolInvocationPartProps
           )}
         </div>
       </div>
+
+      {/* Running progress banner */}
+      {isRunning && (
+        <div className="mt-2 flex items-center gap-2 text-sm text-kumo-strong">
+          <CircleNotch weight="bold" className="h-4 w-4 text-kumo-accent animate-spin" />
+          <span>Running {toolName}...</span>
+        </div>
+      )}
 
       {/* Approval UI */}
       {needsApproval && approval && (

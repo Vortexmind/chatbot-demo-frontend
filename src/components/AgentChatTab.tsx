@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { Button, Badge } from "@cloudflare/kumo";
@@ -41,6 +41,10 @@ export function AgentChatTab() {
   // Chat state
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastContentTimestampRef = useRef(Date.now());
+  const lastAssistantTextRef = useRef("");
+  const lastUserMessageRef = useRef("");
+  const [streamStalled, setStreamStalled] = useState(false);
 
   // Connect to the agent via WebSocket
   // CF Access JWT is sent automatically via cookies (credentials: include)
@@ -141,6 +145,8 @@ export function AgentChatTab() {
     clearHistory,
     isStreaming,
     addToolApprovalResponse,
+    // @ts-expect-error reload may exist at runtime but is not in type definitions
+    reload,
   } = useAgentChat({
     agent,
     getInitialMessages: null, // Skip initial fetch - we'll load messages after connection
@@ -151,6 +157,42 @@ export function AgentChatTab() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
+
+  // Detect stream staleness: if no content changes for 30s during streaming, flag as stalled
+  useEffect(() => {
+    if (!isStreaming) {
+      setStreamStalled(false);
+      lastAssistantTextRef.current = "";
+      return;
+    }
+
+    const checkStall = () => {
+      const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant");
+      if (!lastAssistantMessage) {
+        lastContentTimestampRef.current = Date.now();
+        lastAssistantTextRef.current = "";
+        setStreamStalled(false);
+        return;
+      }
+
+      const textContent = lastAssistantMessage.parts
+        .filter((part) => part.type === "text")
+        .map((part) => (part as { text?: string }).text ?? "")
+        .join("");
+
+      if (textContent !== lastAssistantTextRef.current) {
+        lastContentTimestampRef.current = Date.now();
+        lastAssistantTextRef.current = textContent;
+        setStreamStalled(false);
+      } else if (Date.now() - lastContentTimestampRef.current > 30000) {
+        setStreamStalled(true);
+      }
+    };
+
+    checkStall();
+    const interval = setInterval(checkStall, 1000);
+    return () => clearInterval(interval);
+  }, [isStreaming, messages]);
 
   // Handle MCP connection
   const handleConnect = useCallback(async () => {
@@ -278,6 +320,7 @@ export function AgentChatTab() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming || agentConnectionState !== "connected") return;
     
+    lastUserMessageRef.current = trimmed;
     sendMessage({ text: trimmed });
     setInput("");
   }, [input, isStreaming, sendMessage, agentConnectionState]);
@@ -292,11 +335,42 @@ export function AgentChatTab() {
     addToolApprovalResponse({ id: approvalId, approved: false });
   }, [addToolApprovalResponse]);
 
+  // Retry the last user message when stream stalls
+  const handleRetry = useCallback(() => {
+    if (reload) {
+      reload();
+    } else if (lastUserMessageRef.current.trim()) {
+      sendMessage({ text: lastUserMessageRef.current });
+    }
+  }, [reload, sendMessage]);
+
   // Retry agent connection
   const handleRetryConnection = useCallback(() => {
     // Force a page reload to reconnect
     window.location.reload();
   }, []);
+
+  // Determine current agent activity status from the latest assistant message
+  const agentStatus = useMemo(() => {
+    if (!isStreaming) return "";
+
+    const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant");
+    if (!lastAssistantMessage) return "Agent is responding...";
+
+    for (const part of lastAssistantMessage.parts) {
+      if (part.type === "reasoning") {
+        return "Agent is reasoning...";
+      }
+      if (part.type === "tool-invocation") {
+        const toolState = (part as { toolInvocation?: { state?: string } }).toolInvocation?.state;
+        if (toolState === "loading" || toolState === "streaming") {
+          return "Agent is using tools...";
+        }
+      }
+    }
+
+    return "Agent is responding...";
+  }, [isStreaming, messages]);
 
   // Render agent connection error state
   if (agentConnectionState === "error") {
@@ -433,6 +507,14 @@ export function AgentChatTab() {
         {renderMcpConnectionStatus()}
       </div>
 
+      {/* Activity Status Banner */}
+      {isStreaming && (
+        <div className="flex-shrink-0 py-2 px-4 bg-kumo-canvas/80 border-b border-kumo-line flex items-center gap-2">
+          <CircleNotch weight="bold" className="h-3.5 w-3.5 text-kumo-accent animate-spin" />
+          <span className="text-sm text-kumo-strong">{agentStatus}</span>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-4 px-4">
         {messages.length === 0 ? (
@@ -453,12 +535,15 @@ export function AgentChatTab() {
               const isLastMessage = index === messages.length - 1;
               const isAssistant = message.role === "assistant";
               const showStreaming = isStreaming && isLastMessage && isAssistant;
-              
+              const showStalled = streamStalled && isLastMessage && isAssistant;
+
               return (
                 <AgentChatMessage
                   key={message.id}
                   message={message}
                   isStreaming={showStreaming}
+                  streamStalled={showStalled}
+                  onRetry={showStalled ? handleRetry : undefined}
                   onApprove={handleToolApprove}
                   onDeny={handleToolDeny}
                 />
