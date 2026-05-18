@@ -501,9 +501,21 @@ export function AgentChatTab() {
     <div className="flex flex-col h-full">
       {/* MCP Connection Status Bar */}
       <div className="flex-shrink-0 py-3 px-4 border-b border-kumo-line bg-kumo-canvas/50 flex items-center justify-between">
-        <span className="text-sm text-kumo-strong">
-          Agent Chat with MCP Tools
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-kumo-strong">
+            Agent Chat with MCP Tools
+          </span>
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => clearHistory()}
+              className="text-kumo-subtle hover:text-kumo-strong"
+            >
+              Clear chat
+            </Button>
+          )}
+        </div>
         {renderMcpConnectionStatus()}
       </div>
 
