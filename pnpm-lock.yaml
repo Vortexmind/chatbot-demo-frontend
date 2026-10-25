@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@cloudflare/ai-chat':
         specifier: ^0.4.2
-        version: 0.4.2(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.3.6))(agents@0.11.0)(ai@6.0.159(zod@4.3.6))(react@19.2.4)(zod@4.3.6)
+        version: 0.4.2(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.6.6))(agents@0.11.0)(ai@6.0.159(zod@4.6.6))(react@19.2.4)(zod@4.6.6)
       '@cloudflare/kumo':
         specifier: ^1.17.0
-        version: 1.17.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.3.6)
+        version: 1.17.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.6.6)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -22,10 +22,10 @@ importers:
         version: 4.2.2
       agents:
         specifier: ^0.11.0
-        version: 0.11.0(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.3.6))(@babel/core@7.29.0(supports-color@10.2.2))(@babel/runtime@7.29.2)(@cloudflare/ai-chat@0.4.2)(@cloudflare/workers-types@4.20260414.1)(ai@6.0.159(zod@4.3.6))(react@19.2.4)(rolldown@1.0.0-rc.15)(supports-color@10.2.2)(zod@4.3.6)
+        version: 0.11.0(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.6.6))(@babel/core@7.29.0(supports-color@10.2.2))(@babel/runtime@7.29.2)(@cloudflare/ai-chat@0.4.2)(@cloudflare/workers-types@4.20260414.1)(ai@6.0.159(zod@4.6.6))(react@19.2.4)(rolldown@1.0.0-rc.15)(supports-color@10.2.2)(zod@4.6.6)
       ai:
         specifier: ^6.0.159
-        version: 6.0.159(zod@4.3.6)
+        version: 6.0.159(zod@4.6.6)
       next:
         specifier: 16.4.1
         version: 16.4.1(@babel/core@7.29.0(supports-color@10.2.2))(@opentelemetry/api@1.9.0)(@types/node@25.4.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -40,7 +40,7 @@ importers:
         version: 10.1.0(@types/react@19.2.14)(react@19.2.4)(supports-color@10.2.2)
       zod:
         specifier: ^4.3.6
-        version: 4.3.6
+        version: 4.6.6
     devDependencies:
       '@opennextjs/cloudflare':
         specifier: 1.20.2
@@ -4459,8 +4459,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  zod@4.3.6:
-    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+  zod@4.6.6:
+    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
   zrender@6.0.0:
     resolution: {integrity: sha512-41dFXEEXuJpNecuUQq6JlbybmnHaqqpGlbH1yxnA5V9MMP4SbohSVZsJIwz+zdjQXSSlR1Vc34EgH1zxyTDvhg==}
@@ -4470,28 +4470,28 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.96(zod@4.3.6)':
+  '@ai-sdk/gateway@3.0.96(zod@4.6.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.23(zod@4.6.6)
       '@vercel/oidc': 3.1.0
-      zod: 4.3.6
+      zod: 4.6.6
 
-  '@ai-sdk/provider-utils@4.0.23(zod@4.3.6)':
+  '@ai-sdk/provider-utils@4.0.23(zod@4.6.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
-      zod: 4.3.6
+      zod: 4.6.6
 
   '@ai-sdk/provider@3.0.8':
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.3.6)':
+  '@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.6.6)':
     dependencies:
-      '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
-      ai: 6.0.159(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.23(zod@4.6.6)
+      ai: 6.0.159(zod@4.6.6)
       react: 19.2.4
       swr: 2.5.0(react@19.2.4)
       throttleit: 2.1.0
@@ -5409,15 +5409,15 @@ snapshots:
 
   '@cfworker/json-schema@4.1.1': {}
 
-  '@cloudflare/ai-chat@0.4.2(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.3.6))(agents@0.11.0)(ai@6.0.159(zod@4.3.6))(react@19.2.4)(zod@4.3.6)':
+  '@cloudflare/ai-chat@0.4.2(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.6.6))(agents@0.11.0)(ai@6.0.159(zod@4.6.6))(react@19.2.4)(zod@4.6.6)':
     dependencies:
-      '@ai-sdk/react': 3.0.161(react@19.2.4)(zod@4.3.6)
-      agents: 0.11.0(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.3.6))(@babel/core@7.29.0(supports-color@10.2.2))(@babel/runtime@7.29.2)(@cloudflare/ai-chat@0.4.2)(@cloudflare/workers-types@4.20260414.1)(ai@6.0.159(zod@4.3.6))(react@19.2.4)(rolldown@1.0.0-rc.15)(supports-color@10.2.2)(zod@4.3.6)
-      ai: 6.0.159(zod@4.3.6)
+      '@ai-sdk/react': 3.0.161(react@19.2.4)(zod@4.6.6)
+      agents: 0.11.0(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.6.6))(@babel/core@7.29.0(supports-color@10.2.2))(@babel/runtime@7.29.2)(@cloudflare/ai-chat@0.4.2)(@cloudflare/workers-types@4.20260414.1)(ai@6.0.159(zod@4.6.6))(react@19.2.4)(rolldown@1.0.0-rc.15)(supports-color@10.2.2)(zod@4.6.6)
+      ai: 6.0.159(zod@4.6.6)
       react: 19.2.4
-      zod: 4.3.6
+      zod: 4.6.6
 
-  '@cloudflare/kumo@1.17.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.3.6)':
+  '@cloudflare/kumo@1.17.0(@phosphor-icons/react@2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.14)(echarts@6.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod@4.6.6)':
     dependencies:
       '@base-ui/react': 1.3.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@phosphor-icons/react': 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -5432,7 +5432,7 @@ snapshots:
       shiki: 4.0.2
       tailwind-merge: 3.5.0
     optionalDependencies:
-      zod: 4.3.6
+      zod: 4.6.6
     transitivePeerDependencies:
       - '@emotion/is-prop-valid'
       - '@types/react'
@@ -5958,7 +5958,7 @@ snapshots:
 
   '@jsdevtools/ono@7.1.3': {}
 
-  '@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.3.6)':
+  '@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.6)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.18)
       ajv: 8.18.0
@@ -5975,8 +5975,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.3.6
-      zod-to-json-schema: 3.25.2(zod@4.3.6)
+      zod: 4.6.6
+      zod-to-json-schema: 3.25.2(zod@4.6.6)
     optionalDependencies:
       '@cfworker/json-schema': 4.1.1
     transitivePeerDependencies:
@@ -6880,13 +6880,13 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  agents@0.11.0(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.3.6))(@babel/core@7.29.0(supports-color@10.2.2))(@babel/runtime@7.29.2)(@cloudflare/ai-chat@0.4.2)(@cloudflare/workers-types@4.20260414.1)(ai@6.0.159(zod@4.3.6))(react@19.2.4)(rolldown@1.0.0-rc.15)(supports-color@10.2.2)(zod@4.3.6):
+  agents@0.11.0(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.6.6))(@babel/core@7.29.0(supports-color@10.2.2))(@babel/runtime@7.29.2)(@cloudflare/ai-chat@0.4.2)(@cloudflare/workers-types@4.20260414.1)(ai@6.0.159(zod@4.6.6))(react@19.2.4)(rolldown@1.0.0-rc.15)(supports-color@10.2.2)(zod@4.6.6):
     dependencies:
       '@babel/plugin-proposal-decorators': 7.29.0(@babel/core@7.29.0(supports-color@10.2.2))(supports-color@10.2.2)
       '@cfworker/json-schema': 4.1.1
-      '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.3.6)
+      '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.6)
       '@rolldown/plugin-babel': 0.2.3(@babel/core@7.29.0(supports-color@10.2.2))(@babel/runtime@7.29.2)(rolldown@1.0.0-rc.15)
-      ai: 6.0.159(zod@4.3.6)
+      ai: 6.0.159(zod@4.6.6)
       cron-schedule: 6.0.0
       json-schema: 0.4.0
       json-schema-to-typescript: 15.0.4
@@ -6897,10 +6897,10 @@ snapshots:
       picomatch: 4.0.4
       react: 19.2.4
       yargs: 18.0.0
-      zod: 4.3.6
+      zod: 4.6.6
     optionalDependencies:
-      '@ai-sdk/react': 3.0.161(react@19.2.4)(zod@4.3.6)
-      '@cloudflare/ai-chat': 0.4.2(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.3.6))(agents@0.11.0)(ai@6.0.159(zod@4.3.6))(react@19.2.4)(zod@4.3.6)
+      '@ai-sdk/react': 3.0.161(react@19.2.4)(zod@4.6.6)
+      '@cloudflare/ai-chat': 0.4.2(@ai-sdk/react@3.0.161(react@19.2.4)(zod@4.6.6))(agents@0.11.0)(ai@6.0.159(zod@4.6.6))(react@19.2.4)(zod@4.6.6)
     transitivePeerDependencies:
       - '@babel/core'
       - '@babel/plugin-transform-runtime'
@@ -6909,13 +6909,13 @@ snapshots:
       - rolldown
       - supports-color
 
-  ai@6.0.159(zod@4.3.6):
+  ai@6.0.159(zod@4.6.6):
     dependencies:
-      '@ai-sdk/gateway': 3.0.96(zod@4.3.6)
+      '@ai-sdk/gateway': 3.0.96(zod@4.6.6)
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.23(zod@4.6.6)
       '@opentelemetry/api': 1.9.0
-      zod: 4.3.6
+      zod: 4.6.6
 
   ajv-formats@3.0.1:
     dependencies:
@@ -7577,8 +7577,8 @@ snapshots:
       '@babel/parser': 7.29.2
       eslint: 10.0.3(jiti@2.6.1)(supports-color@10.2.2)
       hermes-parser: 0.25.1
-      zod: 4.3.6
-      zod-validation-error: 4.0.2(zod@4.3.6)
+      zod: 4.6.6
+      zod-validation-error: 4.0.2(zod@4.6.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -9674,15 +9674,15 @@ snapshots:
       cookie: 1.1.1
       youch-core: 0.3.3
 
-  zod-to-json-schema@3.25.2(zod@4.3.6):
+  zod-to-json-schema@3.25.2(zod@4.6.6):
     dependencies:
-      zod: 4.3.6
+      zod: 4.6.6
 
-  zod-validation-error@4.0.2(zod@4.3.6):
+  zod-validation-error@4.0.2(zod@4.6.6):
     dependencies:
-      zod: 4.3.6
+      zod: 4.6.6
 
-  zod@4.3.6: {}
+  zod@4.6.6: {}
 
   zrender@6.0.0:
     dependencies:
