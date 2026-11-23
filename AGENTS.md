@@ -31,6 +31,11 @@ pnpm check       # Full check: OpenNext build + tsc + wrangler deploy --dry-run
 pnpm cf-typegen  # Generate Cloudflare Worker types for env.d.ts
 ```
 
+### Build toolchain
+- CI uses pnpm 9.10.0 and Node 24 (`.nvmrc`).
+- Keep `packages: ["."]` in `pnpm-workspace.yaml`; pnpm 9 rejects the file without it.
+- Keep `@opennextjs/cloudflare` at 1.20.12 or later for Next.js 16.4 (`preview-props.json` inlining). 1.20.18 requires `wrangler` 4.148 or later.
+
 ## Project Structure
 
 ```

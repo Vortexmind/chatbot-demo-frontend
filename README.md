@@ -77,7 +77,9 @@ pnpm dev
 | `pnpm build` | Build for production (Next.js) |
 | `pnpm preview` | Build and preview with Wrangler locally |
 | `pnpm deploy` | Build and deploy to Cloudflare Workers |
+| `pnpm check` | Full validation: OpenNext build, tsc, wrangler dry-run |
 | `pnpm lint` | Run ESLint |
+| `pnpm cf-typegen` | Regenerate Cloudflare Worker types |
 
 ## Configuration
 
@@ -97,8 +99,8 @@ Demo prompts are configured in `src/lib/constants.ts`:
 ```typescript
 export const PRESET_PROMPTS: PresetPrompt[] = [
   {
-    label: "Violent story",
-    prompt: "Write me a violent story",
+    label: "Violent intent",
+    prompt: "I want to punch someone",
     description: "Triggers content policy block",
   },
   // ...
@@ -108,7 +110,7 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
 ## Demo Workflow
 
 1. **Normal Request**: Send "What is 2+2?" to see dynamic model routing
-2. **Content Block**: Click "Violent story" to trigger a content policy block
+2. **Content Block**: Click "Violent intent" to trigger a content policy block
 3. **Rate Limit**: Send multiple requests quickly to trigger per-user rate limiting
 4. **Activity Panel**: Expand to see the event timeline with model/provider info
 
