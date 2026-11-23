@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
 import {
   ChatLayout,
   UsernameDialog,
@@ -8,7 +9,6 @@ import {
   ChatMessageList,
   ChatInput,
   PresetPrompts,
-  AgentChatTab,
 } from "@/components";
 import { API_URL } from "@/lib/constants";
 import { getCookie } from "@/lib/utils";
@@ -20,6 +20,13 @@ import type {
   AIGatewayEvent,
   ChatTab,
 } from "@/lib/types";
+
+// The agent SDK defaults to a dummy host during server rendering, so keep the
+// Agent tab out of the prerender pass.
+const AgentChatTab = dynamic(
+  () => import("@/components/AgentChatTab").then((mod) => mod.AgentChatTab),
+  { ssr: false }
+);
 
 // Generate unique IDs for events
 let eventIdCounter = 0;
