@@ -8,7 +8,7 @@ type SenderLabelProps = {
 
 /**
  * Displays the sender name with an icon above message bubbles.
- * Used by both Standard Chat and Agent Chat for consistent sender identification.
+ * Used by the chat message list for consistent sender identification.
  */
 export function SenderLabel({ isUser, username, align }: SenderLabelProps) {
   const alignment = align ?? (isUser ? "right" : "left");

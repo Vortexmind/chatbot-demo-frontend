@@ -1,6 +1,6 @@
 # Agent Guidelines for chatbot-demo-frontend
 
-This is a Next.js 16 frontend deployed on Cloudflare Workers via OpenNext. It provides a tabbed chat interface with both a standard stateless API chat and an agent-based MCP-enabled chat.
+This is a Next.js 16 frontend deployed on Cloudflare Workers via OpenNext. It provides a chat interface backed by the stateless `chatbot-demo` Worker API, with an AI Gateway activity drawer and file attachments.
 
 ## Build, Test, and Development Commands
 
@@ -38,25 +38,25 @@ src/
 ├── app/
 │   ├── globals.css      # Kumo styles, Tailwind, markdown-content class
 │   ├── layout.tsx       # Root layout with Kumo theme provider
-│   └── page.tsx         # Main page with tab state and both chat implementations
+│   └── page.tsx         # Main page: state, submit logic, streaming, drawer
 ├── components/
-│   ├── AgentChatTab.tsx          # Agent chat container with useAgent/useAgentChat
-│   ├── AgentChatMessage.tsx      # Renders AI SDK v6 message parts
-│   ├── AgentChatInput.tsx        # Simple text input for agent chat
 │   ├── AIGatewayDrawer.tsx       # Activity timeline drawer
-│   ├── BlockedResponseCard.tsx   # Blocked response display
-│   ├── ChatInput.tsx             # Input with file attachments (standard)
-│   ├── ChatLayout.tsx            # Page shell with tabs and dark mode
-│   ├── ChatMessage.tsx           # Message bubble (standard chat)
+│   ├── ChatInput.tsx             # Input with file attachments
+│   ├── ChatLayout.tsx            # Page shell, dark mode, drawer
+│   ├── ChatMessage.tsx           # Message bubble
 │   ├── ChatMessageList.tsx       # Scrollable message list
 │   ├── DarkModeToggle.tsx        # Theme toggle
+│   ├── MarkdownContent.tsx       # Markdown renderer + streaming cursor
+│   ├── MessageBubble.tsx         # Shared bubble styling
 │   ├── PresetPrompts.tsx         # Demo prompt chips
+│   ├── SenderLabel.tsx           # Sender name and icon
+│   ├── StreamingCursor.tsx       # Streaming indicator
 │   ├── UsernameDialog.tsx        # Username entry modal
 │   └── index.ts                  # Barrel exports
 └── lib/
-    ├── constants.ts     # API_URL, AGENT_HOST, AGENT_NAME, presets
+    ├── constants.ts     # API_URL, file limits, presets
     ├── types.ts         # All TypeScript types
-    └── utils.ts         # Helper functions
+    └── utils.ts         # Cookie and username helpers
 ```
 
 ## Code Style Guidelines
@@ -79,131 +79,87 @@ src/
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Input } from "@cloudflare/kumo";
-import { PaperPlaneTilt, Plug, PlugsConnected } from "@phosphor-icons/react";
-import { useAgent, useAgentChat } from "@cloudflare/ai-chat/react";
-import type { UIMessage } from "ai";
+import { PaperPlaneRight } from "@phosphor-icons/react";
 ```
 
 ### Naming Conventions
-- **Components**: PascalCase (`AgentChatTab.tsx`)
-- **Hooks**: camelCase with `use` prefix (`useAgent`, `useAgentChat`)
-- **Types**: PascalCase (`MCPServerState`, `ChatTab`)
-- **Constants**: SCREAMING_SNAKE_CASE (`AGENT_HOST`, `API_URL`)
+- **Components**: PascalCase (`ChatInput.tsx`)
+- **Types**: PascalCase (`AIGatewayEvent`)
+- **Constants**: SCREAMING_SNAKE_CASE (`API_URL`, `PRESET_PROMPTS`)
 - **Functions**: camelCase (`handleSend`, `formatTime`)
 
 ## Key Components
 
-### AgentChatTab.tsx
-Main container for agent chat functionality:
-- Uses `useAgent()` for WebSocket connection to agent backend
-- Uses `useAgentChat()` for AI SDK chat integration
-- Manages MCP connection state via `onMcpUpdate` callback
-- Handles OAuth popup flow for MCP authentication
-
-```typescript
-const agent = useAgent({
-  agent: AGENT_NAME,
-  host: AGENT_HOST,
-  onMcpUpdate: useCallback((data: { servers: Record<string, MCPServerInfo> }) => {
-    // Handle MCP state changes
-  }, []),
-});
-
-const { messages, input, handleInputChange, handleSubmit, isLoading } = useAgentChat({
-  agent,
-});
-```
-
-### AgentChatMessage.tsx
-Renders AI SDK v6 message parts:
-- User messages: plain text
-- Assistant messages: iterates over `message.parts` array
-- Part types: `text`, `tool-{toolName}` (static), `dynamic-tool` (MCP)
-- Uses `markdown-content` CSS class for styling
-
-```typescript
-{message.parts?.map((part, i) => {
-  if (part.type === "text") {
-    return <ReactMarkdown key={i}>{part.text}</ReactMarkdown>;
-  }
-  if (part.type.startsWith("tool-") || part.type === "dynamic-tool") {
-    return <ToolCallDisplay key={i} part={part} />;
-  }
-})}
-```
+### page.tsx
+Owns the chat state and the request lifecycle:
+- Reads the `CF_Authorization` cookie and sends it as `CF-Access-JWT-Assertion`
+- POSTs to `API_URL` with `{ prompt, username, attachments?, stream: true }`
+- Parses the SSE stream and appends tokens to the last bot message
+- Records AI Gateway events (request, streaming, response, blocked, error)
+- Persists username, dark mode, and drawer state in localStorage
 
 ### ChatLayout.tsx
-Page shell with:
-- Tab switcher (Standard / Agent)
-- Dark mode toggle
-- Kumo Page component wrapper
+Page shell with the header, dark mode toggle, AI Gateway drawer button, and the scrollable content column.
+
+### AIGatewayDrawer.tsx
+Timeline of AI Gateway events, current model/provider route, and block reasons.
+
+### ChatInput.tsx
+Textarea, attachment picker, and send button. Enforces `ACCEPTED_FILE_TYPES`, `MAX_FILE_SIZE`, and `MAX_FILES`.
 
 ## Types (src/lib/types.ts)
 
-### MCP Types
 ```typescript
-export type MCPServerState = "disconnected" | "connecting" | "authenticating" | "ready" | "error";
-
-export type MCPServerInfo = {
-  id: string;
-  name: string;
-  state: MCPServerState;
-  authUrl?: string;
-  error?: string;
+export type Message = {
+  sender: "user" | "bot";
+  text: string;
+  attachments?: Attachment[];
+  blocked?: BlockInfo;
+  isStreaming?: boolean;
 };
 
-export type ChatTab = "standard" | "agent";
+export type AIGatewayEvent = {
+  id: string;
+  type: "request" | "response" | "blocked" | "error" | "streaming";
+  timestamp: Date;
+  promptPreview?: string;
+  model?: string | null;
+  provider?: string | null;
+  httpStatus?: number;
+  blockReason?: string;
+  hasAttachment?: boolean;
+  attachmentType?: string;
+};
 ```
 
 ## Key Patterns
 
-### Agent Connection with MCP
-```typescript
-const [mcpState, setMcpState] = useState<MCPServerState>("disconnected");
-const [authUrl, setAuthUrl] = useState<string | null>(null);
+### Streaming response handling
+The backend returns `text/event-stream` when `stream: true`. The page reads the body with a `ReadableStream` reader, buffers partial lines, and parses `data: {"choices":[{"delta":{"content":"..."}}]}` frames.
 
-const agent = useAgent({
-  agent: AGENT_NAME,
-  host: AGENT_HOST,
-  onMcpUpdate: useCallback((data) => {
-    const servers = Object.values(data.servers);
-    if (servers.length === 0) {
-      setMcpState("disconnected");
-    } else {
-      const server = servers[0];
-      setMcpState(server.state);
-      if (server.state === "authenticating" && server.authUrl) {
-        setAuthUrl(server.authUrl);
-      }
-    }
-  }, []),
-});
-```
-
-### OAuth Popup Flow
 ```typescript
-const handleConnect = async () => {
-  setMcpState("connecting");
-  const result = await agent.connectMcpPortal();
-  
-  if (result.state === "authenticating" && result.authUrl) {
-    setAuthUrl(result.authUrl);
-    setMcpState("authenticating");
-    // Open popup
-    window.open(result.authUrl, "mcp-auth", "width=600,height=700");
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let buffer = "";
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  buffer += decoder.decode(value, { stream: true });
+  const lines = buffer.split("\n");
+  buffer = lines.pop() || "";
+  for (const line of lines) {
+    const token = parseSSEData(line.trim());
+    if (token) fullText += token;
   }
-};
+}
 ```
 
-### Message Part Rendering (AI SDK v6)
-```typescript
-// Static tools use "tool-{toolName}" pattern
-// MCP dynamic tools use "dynamic-tool" type
-const isToolPart = part.type.startsWith("tool-") || part.type === "dynamic-tool";
-```
+### Blocked responses
+HTTP 4xx responses return JSON, not a stream. The page maps them to a friendly bot message and records the block in the drawer. `429` is treated as a rate limit.
 
 ### Markdown Styling
-Use `markdown-content` class (defined in globals.css) for rendered markdown:
+Use the `markdown-content` class (defined in `globals.css`) for rendered markdown:
 ```tsx
 <div className="markdown-content">
   <ReactMarkdown>{text}</ReactMarkdown>
@@ -214,21 +170,17 @@ Use `markdown-content` class (defined in globals.css) for rendered markdown:
 
 ## Common Gotchas
 
-1. **AGENT_NAME must be kebab-case**: The agent backend converts `ChatBotAgent` to `chat-bot-agent`
-2. **MCP state via onMcpUpdate**: NOT onStateUpdate; message type is `CF_AGENT_MCP_SERVERS`
-3. **AI SDK v6 part types**: Static tools are `tool-{name}`, MCP tools are `dynamic-tool`
-4. **Markdown styling**: Use `markdown-content` class, not `prose` (causes visibility issues)
-5. **OAuth popup**: User may close manually; handle both successful auth and cancel states
+1. **CF Access cookie**: The backend expects `CF-Access-JWT-Assertion`; the frontend reads it from the `CF_Authorization` cookie
+2. **Streaming vs JSON**: Errors are always JSON even when `stream: true`, so check `response.status` before reading the body
+3. **Markdown styling**: Use `markdown-content`, not `prose`
+4. **Attachments**: Only the first attachment is sent to the backend
+5. **API hostname**: `API_URL` is a dashboard-level custom domain on the `chatbot-demo` Worker, not the `name` in its `wrangler.jsonc`
 
 ## Constants (src/lib/constants.ts)
 
 ```typescript
-// Standard chat backend (stateless Worker)
+// Chat backend (stateless Worker)
 export const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
-
-// Agent backend (Durable Object with MCP)
-export const AGENT_HOST = "https://chatbot-demo-agent.homesecurity.rocks";
-export const AGENT_NAME = "chat-bot-agent";
 ```
 
 ## Common Tasks
@@ -238,18 +190,10 @@ export const AGENT_NAME = "chat-bot-agent";
 2. Add `"use client"` if it uses hooks or browser APIs
 3. Export from `src/components/index.ts`
 
-### Modifying agent connection
-Edit `AgentChatTab.tsx`:
-- `useAgent()` options for connection config
-- `onMcpUpdate` callback for state handling
-- RPC calls like `agent.connectMcpPortal()`
+### Adding a new demo prompt
+Add an entry to `PRESET_PROMPTS` in `src/lib/constants.ts` with `label`, `prompt`, and optional `description`.
 
 ### Styling markdown content
 Edit `src/app/globals.css`:
 - `.markdown-content` class for markdown rendering
 - Avoid Tailwind prose utilities
-
-### Adding new tab
-1. Add to `ChatTab` type in `types.ts`
-2. Add tab button in `ChatLayout.tsx`
-3. Add conditional rendering in `page.tsx`
