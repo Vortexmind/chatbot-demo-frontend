@@ -50,4 +50,6 @@ export type AIGatewayEvent = {
   attachmentType?: string;
 };
 
+export type ChatTab = "standard" | "agent";
+
 

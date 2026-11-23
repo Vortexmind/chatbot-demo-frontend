@@ -14,12 +14,14 @@ Built with [Kumo](https://github.com/cloudflare/kumo), Cloudflare's open-source 
 - **Username-based Chat** - Users enter a username for per-user rate limiting in AI Gateway
 - **Dark Mode** - Toggle between light and dark themes with automatic persistence
 - **Cloudflare Access Auth** - Reads `CF_Authorization` cookie for backend authentication
+- **Agent Chat** - Second tab backed by a Workers AI agent with server tools, browser tools, approval-gated tools, and Cloudflare docs search
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 with App Router
 - **Styling**: [Kumo](https://github.com/cloudflare/kumo) (Cloudflare's design system) + Tailwind CSS v4
 - **Icons**: [Phosphor Icons](https://phosphoricons.com/)
+- **Agent SDK**: `agents` + `@cloudflare/ai-chat` + `ai` v7
 - **Deployment**: Cloudflare Workers via [OpenNext](https://opennext.js.org/)
 - **Package Manager**: pnpm
 
@@ -32,6 +34,9 @@ src/
 │   ├── layout.tsx       # Root layout with Kumo theme
 │   └── page.tsx         # Main chat page (state, streaming, drawer)
 ├── components/
+│   ├── AgentChatTab.tsx          # Agent tab with useAgent/useAgentChat
+│   ├── AgentChatMessage.tsx      # Tool parts and approval UI
+│   ├── AgentChatInput.tsx        # Agent input
 │   ├── AIGatewayDrawer.tsx       # Event timeline drawer
 │   ├── ChatInput.tsx             # Input + attachments
 │   ├── ChatLayout.tsx            # Page shell + dark mode + drawer
@@ -90,7 +95,14 @@ Backend URLs are configured in `src/lib/constants.ts`:
 ```typescript
 // Chat API (stateless worker)
 export const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
+
+// Agent backend. Empty in production so the browser connects same-origin
+// under /agents/*. Set NEXT_PUBLIC_AGENT_HOST for local development.
+export const AGENT_HOST = process.env.NEXT_PUBLIC_AGENT_HOST || "";
+export const AGENT_NAME = "ChatAgent";
 ```
+
+For local agent development, run the agent Worker on port 8787 and start the frontend with `NEXT_PUBLIC_AGENT_HOST=http://localhost:8787 pnpm dev`.
 
 ### Preset Prompts
 
@@ -120,8 +132,18 @@ The Activity Panel shows:
 - HTTP status badges (green for success, red for blocked)
 - Block reasons for rejected requests
 
+### Agent tab
+
+1. **Server tool**: Ask "What's the weather in Paris?"
+2. **Browser tool**: Ask "What timezone am I in?"
+3. **Approval tool**: Ask "What is 5000 * 3?" and approve the calculation
+4. **Docs search**: Ask a Cloudflare product question to trigger `searchCloudflareDocs`
+
+The agent is served same-origin under `/agents/*`, so the existing Cloudflare Access application protects it.
+
 ## Related
 
+- [chatbot-demo-agent](../chatbot-demo-agent) - Workers AI agent backend
 - [chatbot-demo](../chatbot-demo) - Backend Cloudflare Worker
 - [Kumo](https://github.com/cloudflare/kumo) - Cloudflare's design system
 - [AI Gateway Docs](https://developers.cloudflare.com/ai-gateway/)

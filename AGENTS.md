@@ -106,6 +106,15 @@ Owns the chat state and the request lifecycle:
 ### ChatLayout.tsx
 Page shell with the header, dark mode toggle, AI Gateway drawer button, and the scrollable content column.
 
+### AgentChatTab.tsx
+Agent tab backed by the separate `chatbot-demo-agent` Worker:
+- `useAgent({ agent: "ChatAgent" })` connects same-origin in production, resolving to `/agents/chat-agent/{room}`.
+- Local dev uses `NEXT_PUBLIC_AGENT_HOST=http://localhost:8787`.
+- `useAgentChat` manages messages, streaming, tool calls, and approvals.
+- `onToolCall` completes the client-side `getUserTimezone` tool.
+- `calculate` above 1000 requires approval via `addToolApprovalResponse`.
+- The agent Worker is on the same hostname, so the existing Cloudflare Access application covers it.
+
 ### AIGatewayDrawer.tsx
 Timeline of AI Gateway events, current model/provider route, and block reasons.
 
@@ -135,6 +144,8 @@ export type AIGatewayEvent = {
   hasAttachment?: boolean;
   attachmentType?: string;
 };
+
+export type ChatTab = "standard" | "agent";
 ```
 
 ## Key Patterns
@@ -180,12 +191,19 @@ Use the `markdown-content` class (defined in `globals.css`) for rendered markdow
 3. **Markdown styling**: Use `markdown-content`, not `prose`
 4. **Attachments**: Only the first attachment is sent to the backend
 5. **API hostname**: `API_URL` is a dashboard-level custom domain on the `chatbot-demo` Worker, not the `name` in its `wrangler.jsonc`
+6. **Agent same-origin**: In production leave `AGENT_HOST` empty so `useAgent` resolves `/agents/*` on the current hostname and reuses the Access session
+7. **Agent local dev**: Set `NEXT_PUBLIC_AGENT_HOST=http://localhost:8787`; otherwise the browser tries `/agents/*` on the Next.js dev server
+8. **Agent tool parts**: Use `part.state`, `part.toolName`, `part.input`, and `part.output`; approvals use `getToolApproval` and `addToolApprovalResponse`
 
 ## Constants (src/lib/constants.ts)
 
 ```typescript
 // Chat backend (stateless Worker)
 export const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
+
+// Agent backend. Empty in production for same-origin /agents/*.
+export const AGENT_HOST = process.env.NEXT_PUBLIC_AGENT_HOST || "";
+export const AGENT_NAME = "ChatAgent";
 ```
 
 ## Common Tasks

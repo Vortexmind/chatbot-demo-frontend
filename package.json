@@ -14,9 +14,13 @@
     "dash": true
   },
   "dependencies": {
+    "@ai-sdk/react": "^4.0.184",
+    "@cloudflare/ai-chat": "^0.12.3",
     "@cloudflare/kumo": "^1.17.0",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.2.1",
+    "agents": "^0.34.0",
+    "ai": "^7.0.179",
     "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",

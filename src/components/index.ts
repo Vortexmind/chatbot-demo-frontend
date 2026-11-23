@@ -14,6 +14,11 @@ export { ChatMessageList } from "./ChatMessageList";
 export { ChatInput } from "./ChatInput";
 export { PresetPrompts } from "./PresetPrompts";
 
+// Agent chat components
+export { AgentChatTab } from "./AgentChatTab";
+export { AgentChatMessage } from "./AgentChatMessage";
+export { AgentChatInput } from "./AgentChatInput";
+
 // Dialogs and panels
 export { UsernameDialog } from "./UsernameDialog";
 export { AIGatewayDrawer } from "./AIGatewayDrawer";

@@ -1,8 +1,25 @@
 packages:
   - "."
 
+overrides:
+  fast-xml-parser@<5.7.0: ">=5.7.0"
+  ip-address@<=10.1.0: ">=10.1.1"
+  postcss@<8.5.10: ">=8.5.10"
+
 onlyBuiltDependencies:
+  - core-js-pure
   - esbuild
   - sharp
   - unrs-resolver
   - workerd
+
+allowBuilds:
+  core-js-pure: true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  workerd: true
+
+minimumReleaseAgeExclude:
+  - '@ai-sdk/react@4.0.184'
+  - '@ai-sdk/mcp@2.0.103'

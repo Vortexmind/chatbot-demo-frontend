@@ -2,6 +2,11 @@ import type { PresetPrompt } from "./types";
 
 export const API_URL = "https://chatbot-demo-worker.homesecurity.rocks/";
 
+// Agent backend. Empty in production so the browser connects same-origin
+// under /agents/*. Set NEXT_PUBLIC_AGENT_HOST=http://localhost:8787 for local dev.
+export const AGENT_HOST = process.env.NEXT_PUBLIC_AGENT_HOST || "";
+export const AGENT_NAME = "ChatAgent";
+
 export const ACCEPTED_FILE_TYPES = [
   "image/png",
   "image/jpeg",
