@@ -147,6 +147,11 @@ export default function Home() {
     );
   }, []);
 
+  const handleAgentEvent = useCallback(
+    (event: Omit<AIGatewayEvent, "id" | "timestamp">) => addEvent(event),
+    [addEvent]
+  );
+
   const clearEvents = useCallback(() => {
     setAigEvents([]);
   }, []);
@@ -504,7 +509,10 @@ export default function Home() {
           />
         </>
       ) : (
-        <AgentChatTab />
+        <AgentChatTab
+          onEvent={handleAgentEvent}
+          onEventUpdate={updateEvent}
+        />
       )}
     </ChatLayout>
   );

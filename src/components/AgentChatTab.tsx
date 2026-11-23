@@ -12,10 +12,26 @@ import {
 } from "@phosphor-icons/react";
 import type { UIMessage } from "ai";
 import { AGENT_HOST, AGENT_NAME } from "@/lib/constants";
+import type { AIGatewayEvent } from "@/lib/types";
 import { AgentChatInput } from "./AgentChatInput";
 import { AgentChatMessage } from "./AgentChatMessage";
+import { MessageBubble } from "./MessageBubble";
+import { SenderLabel } from "./SenderLabel";
 
 type ConnectionState = "connecting" | "connected" | "error";
+
+type AgentChatTabProps = {
+  onEvent?: (event: Omit<AIGatewayEvent, "id" | "timestamp">) => string;
+  onEventUpdate?: (id: string, updates: Partial<AIGatewayEvent>) => void;
+};
+
+type ToolPart = {
+  type: string;
+  toolName?: string;
+  state?: string;
+};
+
+const ROOM_KEY = "chatbot_agent_room";
 
 const EXAMPLE_PROMPTS = [
   "What's the weather in Paris?",
@@ -24,14 +40,83 @@ const EXAMPLE_PROMPTS = [
   "How does AI Gateway authentication work?",
 ];
 
-export function AgentChatTab() {
+function getOrCreateRoom(): string {
+  if (typeof window === "undefined") return "default";
+  let room = window.sessionStorage.getItem(ROOM_KEY);
+  if (!room) {
+    room = crypto.randomUUID();
+    window.sessionStorage.setItem(ROOM_KEY, room);
+  }
+  return room;
+}
+
+function asToolPart(part: UIMessage["parts"][number]): ToolPart | null {
+  if (part.type === "dynamic-tool" || part.type.startsWith("tool-")) {
+    return part as unknown as ToolPart;
+  }
+  return null;
+}
+
+function getToolName(part: ToolPart): string {
+  if (part.toolName) return part.toolName;
+  return part.type.startsWith("tool-") ? part.type.slice(5) : "tool";
+}
+
+function getActiveTool(messages: UIMessage[]): string | null {
+  const last = [...messages].reverse().find((m) => m.role === "assistant");
+  if (!last) return null;
+  for (const part of last.parts) {
+    const toolPart = asToolPart(part);
+    if (
+      toolPart &&
+      (toolPart.state === "input-streaming" ||
+        toolPart.state === "input-available")
+    ) {
+      return getToolName(toolPart);
+    }
+  }
+  return null;
+}
+
+function hasAssistantContent(message: UIMessage | undefined): boolean {
+  if (!message || message.role !== "assistant") return false;
+  return message.parts.some((part) => {
+    if (part.type === "text" || part.type === "reasoning") {
+      return Boolean((part as { text?: string }).text?.trim());
+    }
+    return asToolPart(part) !== null;
+  });
+}
+
+function isAssistantComplete(message: UIMessage | undefined): boolean {
+  if (!message || message.role !== "assistant") return false;
+  const hasText = message.parts.some(
+    (part) => part.type === "text" && Boolean((part as { text?: string }).text?.trim())
+  );
+  const hasPendingTool = message.parts.some((part) => {
+    const toolPart = asToolPart(part);
+    return (
+      toolPart &&
+      ["input-streaming", "input-available", "approval-requested"].includes(
+        toolPart.state ?? ""
+      )
+    );
+  });
+  return hasText && !hasPendingTool;
+}
+
+export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
   const [input, setInput] = useState("");
+  const [room, setRoom] = useState<string>(() => getOrCreateRoom());
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const requestEventRef = useRef<string | null>(null);
+  const finalizedRef = useRef(false);
 
   const agent = useAgent({
     agent: AGENT_NAME,
+    name: room,
     ...(AGENT_HOST ? { host: AGENT_HOST } : {}),
   });
 
@@ -78,26 +163,92 @@ export function AgentChatTab() {
     },
   });
 
-  const isStreaming = status === "streaming";
+  const isBusy = status === "submitted" || status === "streaming";
+  const activeTool = isBusy ? getActiveTool(messages) : null;
+  const lastMessage = messages[messages.length - 1];
+  const showTyping = isBusy && !hasAssistantContent(lastMessage);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isStreaming]);
+  }, [messages, isBusy]);
+
+  useEffect(() => {
+    const eventId = requestEventRef.current;
+    if (!eventId) return;
+
+    if (status === "streaming") {
+      onEventUpdate?.(eventId, { type: "streaming" });
+      return;
+    }
+
+    if (status === "error") {
+      onEventUpdate?.(eventId, { type: "error" });
+      requestEventRef.current = null;
+      return;
+    }
+
+    if (status === "ready" && !finalizedRef.current) {
+      const lastAssistant = [...messages]
+        .reverse()
+        .find((message) => message.role === "assistant");
+      if (isAssistantComplete(lastAssistant)) {
+        const meta = (lastAssistant?.metadata ?? {}) as {
+          model?: string;
+          provider?: string;
+          gateway?: string;
+        };
+        onEventUpdate?.(eventId, {
+          type: "response",
+          model: meta.model ?? "gemma-4-26b-a4b-it",
+          provider: meta.provider ?? "workers-ai",
+          httpStatus: 200,
+        });
+        finalizedRef.current = true;
+        requestEventRef.current = null;
+      }
+    }
+  }, [status, messages, onEventUpdate]);
+
+  const startRequest = useCallback(
+    (prompt: string) => {
+      finalizedRef.current = false;
+      requestEventRef.current =
+        onEvent?.({
+          type: "request",
+          promptPreview:
+            prompt.slice(0, 50) + (prompt.length > 50 ? "..." : ""),
+          source: "agent",
+        }) ?? null;
+    },
+    [onEvent]
+  );
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
-    if (!trimmed || isStreaming || connection !== "connected") return;
+    if (!trimmed || isBusy || connection !== "connected") return;
+    startRequest(trimmed);
     sendMessage({ text: trimmed });
     setInput("");
-  }, [input, isStreaming, connection, sendMessage]);
+  }, [input, isBusy, connection, sendMessage, startRequest]);
 
   const handleExample = useCallback(
     (prompt: string) => {
-      if (isStreaming || connection !== "connected") return;
+      if (isBusy || connection !== "connected") return;
+      startRequest(prompt);
       sendMessage({ text: prompt });
     },
-    [isStreaming, connection, sendMessage]
+    [isBusy, connection, sendMessage, startRequest]
   );
+
+  const handleNewChat = useCallback(() => {
+    clearHistory();
+    const nextRoom = crypto.randomUUID();
+    window.sessionStorage.setItem(ROOM_KEY, nextRoom);
+    setRoom(nextRoom);
+    setInput("");
+    requestEventRef.current = null;
+    finalizedRef.current = false;
+  }, [clearHistory]);
 
   if (connection === "error") {
     return (
@@ -156,19 +307,33 @@ export function AgentChatTab() {
             <span className="h-2 w-2 rounded-full bg-green-500" />
             Connected
           </Badge>
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => clearHistory()}
-              className="gap-1 text-kumo-strong hover:text-kumo-default"
-            >
-              <Trash weight="bold" className="h-4 w-4" />
-              Clear
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNewChat}
+            className="gap-1 text-kumo-strong hover:text-kumo-default"
+          >
+            <Trash weight="bold" className="h-4 w-4" />
+            New chat
+          </Button>
         </div>
       </div>
+
+      {isBusy && (
+        <div className="flex-shrink-0 py-2 px-4 bg-kumo-canvas/80 border-b border-kumo-line flex items-center gap-2">
+          <CircleNotch
+            weight="bold"
+            className="h-3.5 w-3.5 text-kumo-accent animate-spin"
+          />
+          <span className="text-sm text-kumo-strong">
+            {status === "submitted"
+              ? "Sending..."
+              : activeTool
+                ? `Using ${activeTool}...`
+                : "Agent is thinking..."}
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto py-4 px-4">
         {messages.length === 0 ? (
@@ -201,7 +366,7 @@ export function AgentChatTab() {
                 key={message.id}
                 message={message}
                 isStreaming={
-                  isStreaming &&
+                  isBusy &&
                   index === messages.length - 1 &&
                   message.role === "assistant"
                 }
@@ -213,6 +378,20 @@ export function AgentChatTab() {
                 }
               />
             ))}
+            {showTyping && (
+              <div className="my-3 text-left">
+                <SenderLabel isUser={false} />
+                <MessageBubble isUser={false}>
+                  <span className="inline-flex items-center gap-2 text-sm text-kumo-strong">
+                    <CircleNotch
+                      weight="bold"
+                      className="h-4 w-4 text-kumo-accent animate-spin"
+                    />
+                    Agent is thinking...
+                  </span>
+                </MessageBubble>
+              </div>
+            )}
             <div ref={endRef} />
           </div>
         )}
@@ -224,7 +403,7 @@ export function AgentChatTab() {
           onChange={setInput}
           onSubmit={handleSend}
           disabled={connection !== "connected"}
-          loading={isStreaming}
+          loading={isBusy}
         />
       </div>
     </div>

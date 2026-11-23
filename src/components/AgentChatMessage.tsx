@@ -184,6 +184,12 @@ export function AgentChatMessage({
 
   if (!hasContent) return null;
 
+  const hasText = message.parts.some(
+    (part) =>
+      part.type === "text" && Boolean((part as { text?: string }).text?.trim())
+  );
+  const hasToolParts = message.parts.some((part) => asToolPart(part) !== null);
+
   return (
     <div className={`my-3 ${isUser ? "text-right" : "text-left"}`}>
       <SenderLabel isUser={isUser} />
@@ -227,6 +233,12 @@ export function AgentChatMessage({
 
           return null;
         })}
+
+        {!isUser && !isStreaming && hasToolParts && !hasText && (
+          <p className="mt-2 text-sm text-kumo-subtle">
+            The agent ran a tool but did not return a text response.
+          </p>
+        )}
       </MessageBubble>
     </div>
   );

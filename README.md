@@ -139,7 +139,7 @@ The Activity Panel shows:
 3. **Approval tool**: Ask "What is 5000 * 3?" and approve the calculation
 4. **Docs search**: Ask a Cloudflare product question to trigger `searchCloudflareDocs`
 
-The agent is served same-origin under `/agents/*`, so the existing Cloudflare Access application protects it.
+The agent is served same-origin under `/agents/*`, so the existing Cloudflare Access application protects it. Conversation history is scoped to the browser session, so closing the browser starts a fresh conversation.
 
 ## Related
 

@@ -114,6 +114,8 @@ Agent tab backed by the separate `chatbot-demo-agent` Worker:
 - `onToolCall` completes the client-side `getUserTimezone` tool.
 - `calculate` above 1000 requires approval via `addToolApprovalResponse`.
 - The agent Worker is on the same hostname, so the existing Cloudflare Access application covers it.
+- Room IDs live in `sessionStorage`, so closing the browser starts a fresh conversation.
+- `onEvent` and `onEventUpdate` feed agent request, streaming, response, and error events into the AI Gateway drawer.
 
 ### AIGatewayDrawer.tsx
 Timeline of AI Gateway events, current model/provider route, and block reasons.

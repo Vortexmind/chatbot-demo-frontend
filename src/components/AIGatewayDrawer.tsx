@@ -156,6 +156,11 @@ function TimelinePill({
               <span className="font-medium text-sm text-kumo-default">
                 {label}
               </span>
+              {event.source === "agent" && (
+                <Badge variant="blue-subtle" className="text-xs">
+                  Agent
+                </Badge>
+              )}
               {isRequest && event.hasAttachment && (
                 <span className="flex items-center gap-0.5">
                   <AttachmentIcon type={event.attachmentType} />

@@ -48,6 +48,7 @@ export type AIGatewayEvent = {
   blockReason?: string;
   hasAttachment?: boolean;
   attachmentType?: string;
+  source?: "standard" | "agent";
 };
 
 export type ChatTab = "standard" | "agent";
