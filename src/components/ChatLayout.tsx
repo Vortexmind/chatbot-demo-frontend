@@ -6,6 +6,7 @@ import {
   ArrowCounterClockwise,
   Robot,
   ChatCircle,
+  Graph,
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { DarkModeToggle } from "./DarkModeToggle";
@@ -23,6 +24,7 @@ type ChatLayoutProps = {
   onNewChat?: () => void;
   activeTab?: ChatTab;
   onTabChange?: (tab: ChatTab) => void;
+  wide?: boolean;
 };
 
 export function ChatLayout({
@@ -37,6 +39,7 @@ export function ChatLayout({
   onNewChat,
   activeTab = "agent",
   onTabChange,
+  wide = false,
 }: ChatLayoutProps) {
   return (
     <main className="h-screen bg-kumo-canvas flex flex-col overflow-hidden">
@@ -100,6 +103,18 @@ export function ChatLayout({
                   <ChatCircle weight={activeTab === "standard" ? "fill" : "regular"} className="h-4 w-4" />
                   <span className="hidden sm:inline">Standard</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => onTabChange("architecture")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === "architecture"
+                      ? "bg-kumo-base text-kumo-default shadow-sm"
+                      : "text-kumo-strong hover:text-kumo-default"
+                  }`}
+                >
+                  <Graph weight={activeTab === "architecture" ? "fill" : "regular"} className="h-4 w-4" />
+                  <span className="hidden sm:inline">Architecture</span>
+                </button>
               </div>
             )}
 
@@ -144,8 +159,18 @@ export function ChatLayout({
             isDrawerOpen ? "mr-0" : ""
           }`}
         >
-          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-            <div className="mx-auto max-w-2xl h-full flex flex-col">
+          <div
+            className={`flex-1 ${
+              wide
+                ? "overflow-hidden px-2 py-2 sm:px-3"
+                : "overflow-y-auto px-4 py-4 sm:px-6"
+            }`}
+          >
+            <div
+              className={`mx-auto ${
+                wide ? "max-w-none w-full" : "max-w-2xl"
+              } h-full flex flex-col`}
+            >
               {children}
             </div>
           </div>

@@ -28,6 +28,11 @@ const AgentChatTab = dynamic(
   { ssr: false }
 );
 
+const ArchitectureTab = dynamic(
+  () => import("@/components/ArchitectureTab").then((mod) => mod.ArchitectureTab),
+  { ssr: false }
+);
+
 // Generate unique IDs for events
 let eventIdCounter = 0;
 function generateEventId(): string {
@@ -98,7 +103,11 @@ export default function Home() {
     }
 
     const storedTab = localStorage.getItem("chatbot_active_tab") as ChatTab | null;
-    if (storedTab === "standard" || storedTab === "agent") {
+    if (
+      storedTab === "standard" ||
+      storedTab === "agent" ||
+      storedTab === "architecture"
+    ) {
       setActiveTab(storedTab);
     }
 
@@ -463,6 +472,7 @@ export default function Home() {
       onNewChat={activeTab === "standard" ? handleNewChat : undefined}
       activeTab={activeTab}
       onTabChange={handleTabChange}
+      wide={activeTab === "architecture"}
     >
       {activeTab === "standard" ? (
         <>
@@ -490,12 +500,14 @@ export default function Home() {
             loading={loading}
           />
         </>
-      ) : (
+      ) : activeTab === "agent" ? (
         <AgentChatTab
           userEmail={userEmail}
           onEvent={handleAgentEvent}
           onEventUpdate={updateEvent}
         />
+      ) : (
+        <ArchitectureTab isDarkMode={isDarkMode} />
       )}
     </ChatLayout>
   );

@@ -19,6 +19,7 @@
     "@cloudflare/kumo": "^1.17.0",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.3.5",
+    "@xyflow/react": "^13.0.3",
     "agents": "^0.34.0",
     "ai": "^7.0.179",
     "next": "16.4.6",
