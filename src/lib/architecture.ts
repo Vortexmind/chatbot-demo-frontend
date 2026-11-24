@@ -113,8 +113,8 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "lane-app",
     type: "lane",
-    position: { x: 440, y: 20 },
-    style: { width: 800, height: 760, pointerEvents: "none" },
+    position: { x: 420, y: 20 },
+    style: { width: 880, height: 760, pointerEvents: "none" },
     data: {
       label: "Application",
       subtitle: "Protected by Cloudflare Access + WAF",
@@ -129,8 +129,8 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "lane-ai",
     type: "lane",
-    position: { x: 1220, y: 20 },
-    style: { width: 780, height: 760, pointerEvents: "none" },
+    position: { x: 1300, y: 20 },
+    style: { width: 810, height: 760, pointerEvents: "none" },
     data: { label: "AI platform" },
     selectable: false,
     draggable: false,
@@ -161,7 +161,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "frontend",
     type: "architecture",
-    position: { x: 520, y: 260 },
+    position: { x: 500, y: 260 },
     data: {
       title: "Next.js frontend",
       subtitle: "Workers and OpenNext",
@@ -186,7 +186,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "standard-worker",
     type: "architecture",
-    position: { x: 770, y: 140 },
+    position: { x: 760, y: 140 },
     data: {
       title: "Standard chat Worker",
       subtitle: "REST chat endpoint",
@@ -207,7 +207,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "agent-worker",
     type: "architecture",
-    position: { x: 770, y: 440 },
+    position: { x: 760, y: 440 },
     data: {
       title: "Agent Worker",
       subtitle: "WebSocket agent",
@@ -232,7 +232,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "agent-do",
     type: "architecture",
-    position: { x: 1000, y: 440 },
+    position: { x: 1020, y: 440 },
     data: {
       title: "Chat agent Durable Object",
       subtitle: "Per-room state",
@@ -257,7 +257,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "gateway-access",
     type: "architecture",
-    position: { x: 1000, y: 260 },
+    position: { x: 1020, y: 260 },
     data: {
       title: "AI Gateway Access",
       subtitle: "Service token",
@@ -282,7 +282,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "gateway",
     type: "architecture",
-    position: { x: 1240, y: 260 },
+    position: { x: 1340, y: 260 },
     data: {
       title: "AI Gateway",
       subtitle: "Control plane for AI traffic",
@@ -307,7 +307,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "guardrails",
     type: "architecture",
-    position: { x: 1490, y: 260 },
+    position: { x: 1600, y: 260 },
     data: {
       title: "Guardrails and DLP",
       subtitle: "Policy before inference",
@@ -332,7 +332,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "router",
     type: "architecture",
-    position: { x: 1490, y: 500 },
+    position: { x: 1600, y: 500 },
     data: {
       title: "Dynamic route",
       subtitle: "Model selection",
@@ -357,7 +357,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "workers-ai",
     type: "architecture",
-    position: { x: 1740, y: 500 },
+    position: { x: 1860, y: 500 },
     data: {
       title: "Workers AI",
       subtitle: "Serverless inference",
@@ -382,7 +382,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "observability",
     type: "architecture",
-    position: { x: 1240, y: 520 },
+    position: { x: 1340, y: 520 },
     data: {
       title: "Logs and User Insights",
       subtitle: "Attribution and spend",
@@ -428,7 +428,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "frontend-standard",
     source: "frontend",
     target: "standard-worker",
-    label: "POST /chat",
+    label: "chat",
     data: { flows: ["standard"] },
   },
   {
@@ -436,7 +436,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "frontend-agent",
     source: "frontend",
     target: "agent-worker",
-    label: "WebSocket /agents",
+    label: "agent",
     data: { flows: ["agent"] },
   },
   {
@@ -452,7 +452,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "standard-gateway-access",
     source: "standard-worker",
     target: "gateway-access",
-    label: "service token",
+    label: "token",
     data: { flows: ["standard"] },
   },
   {
@@ -462,7 +462,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     target: "gateway-access",
     sourceHandle: "top-source",
     targetHandle: "bottom-target",
-    label: "service token",
+    label: "token",
     data: { flows: ["agent"] },
   },
   {
@@ -470,7 +470,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "gateway-access-gateway",
     source: "gateway-access",
     target: "gateway",
-    label: "authorized",
+    label: "allowed",
     data: { flows: ["standard", "agent"] },
   },
   {
@@ -496,7 +496,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "router-workers-ai",
     source: "router",
     target: "workers-ai",
-    label: "inference",
+    label: "model",
     data: { flows: ["standard", "agent"] },
   },
   {
@@ -506,7 +506,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     target: "observability",
     sourceHandle: "bottom-source",
     targetHandle: "top-target",
-    label: "logs and metadata",
+    label: "logs",
     animated: false,
     style: { ...edgeDefaults.style, strokeDasharray: "6 4" },
     data: { flows: ["observability"] },
