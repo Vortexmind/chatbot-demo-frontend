@@ -365,7 +365,7 @@ export function AgentChatTab({
         <div className="flex items-center gap-2">
           <Robot weight="bold" className="h-4 w-4 text-kumo-accent" />
           <span className="text-sm text-kumo-strong">Agent Chat</span>
-          <Badge variant="neutral-subtle" className="text-xs">
+          <Badge variant="secondary" className="text-xs">
             Workers AI + AI Gateway
           </Badge>
         </div>
