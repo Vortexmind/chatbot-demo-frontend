@@ -16,8 +16,8 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import type {
+  ArchitectureFlowNode,
   ArchitectureIcon,
-  ArchitectureNode as ArchitectureNodeType,
   ArchitectureTone,
 } from "@/lib/architecture";
 
@@ -70,7 +70,7 @@ const TONES: Record<
 export function ArchitectureNode({
   data,
   selected,
-}: NodeProps<ArchitectureNodeType>) {
+}: NodeProps<ArchitectureFlowNode>) {
   const tone = TONES[data.tone];
   const IconComponent = ICONS[data.icon];
 
@@ -85,7 +85,20 @@ export function ArchitectureNode({
       <Handle
         type="target"
         position={Position.Left}
+        id="left-target"
         className="!h-2 !w-2 !border-0 !bg-kumo-line"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top-target"
+        className="!h-1.5 !w-1.5 !border-0 !bg-kumo-line !opacity-0"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-target"
+        className="!h-1.5 !w-1.5 !border-0 !bg-kumo-line !opacity-0"
       />
       <div className="flex items-start gap-2.5">
         <div className={`rounded-lg p-1.5 ${tone.icon}`}>
@@ -115,7 +128,20 @@ export function ArchitectureNode({
       <Handle
         type="source"
         position={Position.Right}
+        id="right-source"
         className="!h-2 !w-2 !border-0 !bg-kumo-line"
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top-source"
+        className="!h-1.5 !w-1.5 !border-0 !bg-kumo-line !opacity-0"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom-source"
+        className="!h-1.5 !w-1.5 !border-0 !bg-kumo-line !opacity-0"
       />
     </div>
   );

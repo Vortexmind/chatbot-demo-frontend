@@ -31,7 +31,17 @@ export type ArchitectureNodeData = {
   };
 };
 
-export type ArchitectureNode = Node<ArchitectureNodeData, "architecture">;
+export type ArchitectureFlowNode = Node<ArchitectureNodeData, "architecture">;
+export type ArchitectureLaneData = {
+  label: string;
+  subtitle?: string;
+  badges?: string[];
+  tone?: "neutral" | "blue";
+  active?: boolean;
+  dimmed?: boolean;
+};
+export type ArchitectureLaneNode = Node<ArchitectureLaneData, "lane">;
+export type ArchitectureNode = ArchitectureFlowNode | ArchitectureLaneNode;
 
 export type FlowId = "standard" | "agent" | "observability";
 
@@ -55,7 +65,6 @@ export const FLOWS: FlowDefinition[] = [
     color: "#3b82f6",
     nodeIds: [
       "browser",
-      "access",
       "frontend",
       "standard-worker",
       "gateway-access",
@@ -71,7 +80,6 @@ export const FLOWS: FlowDefinition[] = [
     color: "#8b5cf6",
     nodeIds: [
       "browser",
-      "access",
       "frontend",
       "agent-worker",
       "agent-do",
@@ -92,9 +100,47 @@ export const FLOWS: FlowDefinition[] = [
 
 export const architectureNodes: ArchitectureNode[] = [
   {
+    id: "lane-edge",
+    type: "lane",
+    position: { x: -40, y: 20 },
+    style: { width: 460, height: 760, pointerEvents: "none" },
+    data: { label: "Client" },
+    selectable: false,
+    draggable: false,
+    connectable: false,
+    zIndex: -1,
+  },
+  {
+    id: "lane-app",
+    type: "lane",
+    position: { x: 420, y: 20 },
+    style: { width: 880, height: 760, pointerEvents: "none" },
+    data: {
+      label: "Application",
+      subtitle: "Protected by Cloudflare Access + WAF",
+      badges: ["Access", "WAF", "Gateway skip"],
+      tone: "blue",
+    },
+    selectable: false,
+    draggable: false,
+    connectable: false,
+    zIndex: -1,
+  },
+  {
+    id: "lane-ai",
+    type: "lane",
+    position: { x: 1300, y: 20 },
+    style: { width: 810, height: 760, pointerEvents: "none" },
+    data: { label: "AI platform" },
+    selectable: false,
+    draggable: false,
+    connectable: false,
+    zIndex: -1,
+  },
+  {
     id: "browser",
     type: "architecture",
-    position: { x: 0, y: 240 },
+    position: { x: 0, y: 260 },
     data: {
       title: "User browser",
       subtitle: "Chat UI",
@@ -113,59 +159,9 @@ export const architectureNodes: ArchitectureNode[] = [
     },
   },
   {
-    id: "access",
-    type: "architecture",
-    position: { x: 260, y: 80 },
-    data: {
-      title: "Cloudflare Access",
-      subtitle: "Identity at the edge",
-      icon: "access",
-      tone: "blue",
-      badges: ["SSO", "JWT"],
-      details: {
-        summary:
-          "Cloudflare Access verifies the user's identity before requests reach the application.",
-        bullets: [
-          "Protects the frontend hostname.",
-          "Issues a signed JWT containing the user's email.",
-          "The same identity is used for AI Gateway attribution.",
-        ],
-        docs: {
-          label: "Access documentation",
-          href: "https://developers.cloudflare.com/cloudflare-one/access-controls/",
-        },
-      },
-    },
-  },
-  {
-    id: "waf",
-    type: "architecture",
-    position: { x: 260, y: 400 },
-    data: {
-      title: "WAF and bot rules",
-      subtitle: "Zone protection",
-      icon: "waf",
-      tone: "orange",
-      badges: ["Managed rules", "Gateway skip"],
-      details: {
-        summary:
-          "The zone's WAF and bot rules inspect requests before they reach the app.",
-        bullets: [
-          "Managed rules and custom bot rules apply to the app hostnames.",
-          "The AI Gateway custom hostname has a scoped skip rule so server-to-server calls are not blocked.",
-          "The skip is limited to the gateway hostname.",
-        ],
-        docs: {
-          label: "WAF documentation",
-          href: "https://developers.cloudflare.com/waf/",
-        },
-      },
-    },
-  },
-  {
     id: "frontend",
     type: "architecture",
-    position: { x: 520, y: 240 },
+    position: { x: 500, y: 260 },
     data: {
       title: "Next.js frontend",
       subtitle: "Workers and OpenNext",
@@ -190,7 +186,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "standard-worker",
     type: "architecture",
-    position: { x: 800, y: 80 },
+    position: { x: 760, y: 140 },
     data: {
       title: "Standard chat Worker",
       subtitle: "REST chat endpoint",
@@ -211,7 +207,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "agent-worker",
     type: "architecture",
-    position: { x: 800, y: 400 },
+    position: { x: 760, y: 440 },
     data: {
       title: "Agent Worker",
       subtitle: "WebSocket agent",
@@ -236,7 +232,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "agent-do",
     type: "architecture",
-    position: { x: 1060, y: 400 },
+    position: { x: 1020, y: 440 },
     data: {
       title: "Chat agent Durable Object",
       subtitle: "Per-room state",
@@ -261,7 +257,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "gateway-access",
     type: "architecture",
-    position: { x: 1060, y: 240 },
+    position: { x: 1020, y: 260 },
     data: {
       title: "AI Gateway Access",
       subtitle: "Service token",
@@ -286,7 +282,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "gateway",
     type: "architecture",
-    position: { x: 1320, y: 240 },
+    position: { x: 1340, y: 260 },
     data: {
       title: "AI Gateway",
       subtitle: "Control plane for AI traffic",
@@ -311,7 +307,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "guardrails",
     type: "architecture",
-    position: { x: 1580, y: 80 },
+    position: { x: 1600, y: 260 },
     data: {
       title: "Guardrails and DLP",
       subtitle: "Policy before inference",
@@ -336,7 +332,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "router",
     type: "architecture",
-    position: { x: 1580, y: 400 },
+    position: { x: 1600, y: 500 },
     data: {
       title: "Dynamic route",
       subtitle: "Model selection",
@@ -361,7 +357,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "workers-ai",
     type: "architecture",
-    position: { x: 1840, y: 240 },
+    position: { x: 1860, y: 500 },
     data: {
       title: "Workers AI",
       subtitle: "Serverless inference",
@@ -386,7 +382,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "observability",
     type: "architecture",
-    position: { x: 1320, y: 520 },
+    position: { x: 1340, y: 520 },
     data: {
       title: "Logs and User Insights",
       subtitle: "Attribution and spend",
@@ -412,6 +408,8 @@ export const architectureNodes: ArchitectureNode[] = [
 
 const edgeDefaults = {
   type: "smoothstep" as const,
+  sourceHandle: "right-source",
+  targetHandle: "left-target",
   markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
   style: { stroke: "#94a3b8", strokeWidth: 1.5 },
 };
@@ -419,46 +417,18 @@ const edgeDefaults = {
 export const architectureEdges: ArchitectureEdge[] = [
   {
     ...edgeDefaults,
-    id: "browser-access",
+    id: "browser-frontend",
     source: "browser",
-    target: "access",
-    label: "Access session",
-    data: { flows: ["standard", "agent"] },
-  },
-  {
-    ...edgeDefaults,
-    id: "access-frontend",
-    source: "access",
     target: "frontend",
-    label: "JWT",
+    label: "HTTPS",
     data: { flows: ["standard", "agent"] },
-  },
-  {
-    ...edgeDefaults,
-    id: "browser-waf",
-    source: "browser",
-    target: "waf",
-    label: "request",
-    animated: false,
-    style: { ...edgeDefaults.style, strokeDasharray: "6 4" },
-    data: { flows: [] },
-  },
-  {
-    ...edgeDefaults,
-    id: "waf-frontend",
-    source: "waf",
-    target: "frontend",
-    label: "bot rules",
-    animated: false,
-    style: { ...edgeDefaults.style, strokeDasharray: "6 4" },
-    data: { flows: [] },
   },
   {
     ...edgeDefaults,
     id: "frontend-standard",
     source: "frontend",
     target: "standard-worker",
-    label: "POST /chat",
+    label: "chat",
     data: { flows: ["standard"] },
   },
   {
@@ -466,7 +436,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "frontend-agent",
     source: "frontend",
     target: "agent-worker",
-    label: "WebSocket /agents",
+    label: "agent",
     data: { flows: ["agent"] },
   },
   {
@@ -482,7 +452,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "standard-gateway-access",
     source: "standard-worker",
     target: "gateway-access",
-    label: "service token",
+    label: "token",
     data: { flows: ["standard"] },
   },
   {
@@ -490,7 +460,9 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "agent-do-gateway-access",
     source: "agent-do",
     target: "gateway-access",
-    label: "service token",
+    sourceHandle: "top-source",
+    targetHandle: "bottom-target",
+    label: "token",
     data: { flows: ["agent"] },
   },
   {
@@ -498,7 +470,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "gateway-access-gateway",
     source: "gateway-access",
     target: "gateway",
-    label: "authorized",
+    label: "allowed",
     data: { flows: ["standard", "agent"] },
   },
   {
@@ -514,6 +486,8 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "guardrails-router",
     source: "guardrails",
     target: "router",
+    sourceHandle: "bottom-source",
+    targetHandle: "top-target",
     label: "route",
     data: { flows: ["standard", "agent"] },
   },
@@ -522,7 +496,7 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "router-workers-ai",
     source: "router",
     target: "workers-ai",
-    label: "inference",
+    label: "model",
     data: { flows: ["standard", "agent"] },
   },
   {
@@ -530,13 +504,18 @@ export const architectureEdges: ArchitectureEdge[] = [
     id: "gateway-observability",
     source: "gateway",
     target: "observability",
-    label: "logs and metadata",
+    sourceHandle: "bottom-source",
+    targetHandle: "top-target",
+    label: "logs",
     animated: false,
     style: { ...edgeDefaults.style, strokeDasharray: "6 4" },
     data: { flows: ["observability"] },
   },
 ];
 
-export function getArchitectureNode(id: string): ArchitectureNode | undefined {
-  return architectureNodes.find((node) => node.id === id);
+export function getArchitectureNode(id: string): ArchitectureFlowNode | undefined {
+  return architectureNodes.find(
+    (node): node is ArchitectureFlowNode =>
+      node.type === "architecture" && node.id === id,
+  );
 }

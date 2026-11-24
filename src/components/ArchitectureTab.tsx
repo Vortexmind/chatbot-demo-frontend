@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Background,
   Controls,
@@ -9,12 +9,13 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
+  type NodeTypes,
 } from "@xyflow/react";
 import { Button } from "@cloudflare/kumo";
 import {
+  ArrowLeft,
+  ArrowRight,
   ArrowSquareOut,
-  Play,
-  Stop,
   X,
 } from "@phosphor-icons/react";
 import {
@@ -22,12 +23,17 @@ import {
   architectureNodes,
   FLOWS,
   type ArchitectureEdge,
+  type ArchitectureFlowNode,
   type ArchitectureNode,
   type FlowId,
 } from "@/lib/architecture";
+import { ArchitectureLane as ArchitectureLaneComponent } from "./ArchitectureLane";
 import { ArchitectureNode as ArchitectureNodeComponent } from "./ArchitectureNode";
 
-const nodeTypes = { architecture: ArchitectureNodeComponent };
+const nodeTypes = {
+  architecture: ArchitectureNodeComponent,
+  lane: ArchitectureLaneComponent,
+} as NodeTypes;
 
 type ArchitectureTabProps = {
   isDarkMode: boolean;
@@ -43,7 +49,6 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeFlow, setActiveFlow] = useState<FlowId | null>(null);
   const [step, setStep] = useState(0);
-  const [playing, setPlaying] = useState(false);
 
   const activeFlowDef = useMemo(
     () => FLOWS.find((flow) => flow.id === activeFlow) ?? null,
@@ -54,16 +59,19 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
 
   const displayNodes = useMemo(
     () =>
-      nodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          active: node.id === activeNodeId,
-          dimmed: Boolean(
-            activeFlowDef && !activeFlowDef.nodeIds.includes(node.id),
-          ),
-        },
-      })),
+      nodes.map((node) => {
+        if (node.type === "lane") return node;
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            active: node.id === activeNodeId,
+            dimmed: Boolean(
+              activeFlowDef && !activeFlowDef.nodeIds.includes(node.id),
+            ),
+          },
+        };
+      }),
     [nodes, activeNodeId, activeFlowDef],
   );
 
@@ -93,39 +101,40 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
     [edges, activeFlowDef, step],
   );
 
-  useEffect(() => {
-    if (playing && activeNodeId) {
-      setSelectedId(activeNodeId);
-    }
-  }, [playing, activeNodeId]);
-
-  useEffect(() => {
-    if (!playing || !activeFlowDef) return;
-    if (step >= activeFlowDef.nodeIds.length - 1) {
-      const timer = window.setTimeout(() => setPlaying(false), 900);
-      return () => window.clearTimeout(timer);
-    }
-    const timer = window.setTimeout(() => setStep((value) => value + 1), 850);
-    return () => window.clearTimeout(timer);
-  }, [playing, step, activeFlowDef]);
-
-  const startFlow = useCallback((id: FlowId) => {
+  const selectFlow = useCallback((id: FlowId) => {
     const flow = FLOWS.find((item) => item.id === id);
     if (!flow) return;
     setActiveFlow(id);
     setStep(0);
-    setPlaying(true);
     setSelectedId(flow.nodeIds[0]);
   }, []);
 
-  const stopFlow = useCallback(() => {
-    setPlaying(false);
+  const goPrevious = useCallback(() => {
+    if (!activeFlowDef) return;
+    const next = Math.max(step - 1, 0);
+    setStep(next);
+    setSelectedId(activeFlowDef.nodeIds[next]);
+  }, [activeFlowDef, step]);
+
+  const goNext = useCallback(() => {
+    if (!activeFlowDef) return;
+    const next = Math.min(step + 1, activeFlowDef.nodeIds.length - 1);
+    setStep(next);
+    setSelectedId(activeFlowDef.nodeIds[next]);
+  }, [activeFlowDef, step]);
+
+  const clearFlow = useCallback(() => {
     setActiveFlow(null);
     setStep(0);
+    setSelectedId(null);
   }, []);
 
   const selectedNode = useMemo(
-    () => nodes.find((node) => node.id === selectedId) ?? null,
+    () =>
+      nodes.find(
+        (node): node is ArchitectureFlowNode =>
+          node.type === "architecture" && node.id === selectedId,
+      ) ?? null,
     [nodes, selectedId],
   );
 
@@ -138,7 +147,9 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => setSelectedId(node.id)}
+          onNodeClick={(_, node) => {
+            if (node.type === "architecture") setSelectedId(node.id);
+          }}
           fitView
           fitViewOptions={{ padding: 0.15 }}
           minZoom={0.15}
@@ -156,53 +167,81 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
           <MiniMap
             pannable
             zoomable
-            nodeColor="#94a3b8"
+            nodeColor={(node) =>
+              node.type === "lane" ? "rgba(148, 163, 184, 0.12)" : "#94a3b8"
+            }
             maskColor={
               isDarkMode ? "rgba(15, 23, 42, 0.72)" : "rgba(241, 245, 249, 0.72)"
             }
           />
           <Panel
             position="top-left"
-            className="flex flex-wrap items-center gap-2 rounded-lg border border-kumo-line bg-kumo-base/90 p-2 backdrop-blur"
+            className="flex flex-col gap-2 rounded-lg border border-kumo-line bg-kumo-base/90 p-2 backdrop-blur"
           >
-            <Button
-              variant="secondary"
-              size="sm"
-              className="gap-1"
-              onClick={() => startFlow("standard")}
-            >
-              <Play weight="fill" className="h-3.5 w-3.5" />
-              Standard flow
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="gap-1"
-              onClick={() => startFlow("agent")}
-            >
-              <Play weight="fill" className="h-3.5 w-3.5" />
-              Agent flow
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1"
-              onClick={() => startFlow("observability")}
-            >
-              <Play weight="fill" className="h-3.5 w-3.5" />
-              Logs
-            </Button>
-            {playing && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant={activeFlow === "standard" ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => selectFlow("standard")}
+              >
+                Standard flow
+              </Button>
+              <Button
+                variant={activeFlow === "agent" ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => selectFlow("agent")}
+              >
+                Agent flow
+              </Button>
+              <Button
+                variant={activeFlow === "observability" ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => selectFlow("observability")}
+              >
+                Logs
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 className="gap-1"
-                onClick={stopFlow}
+                onClick={goPrevious}
+                disabled={!activeFlowDef || step === 0}
               >
-                <Stop weight="fill" className="h-3.5 w-3.5" />
-                Stop
+                <ArrowLeft weight="bold" className="h-3.5 w-3.5" />
+                Previous
               </Button>
-            )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1"
+                onClick={goNext}
+                disabled={
+                  !activeFlowDef ||
+                  step >= activeFlowDef.nodeIds.length - 1
+                }
+              >
+                Next
+                <ArrowRight weight="bold" className="h-3.5 w-3.5" />
+              </Button>
+              {activeFlowDef && (
+                <span className="text-xs text-kumo-strong">
+                  Step {step + 1} of {activeFlowDef.nodeIds.length}
+                </span>
+              )}
+              {(activeFlowDef || selectedId) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1"
+                  onClick={clearFlow}
+                >
+                  <X weight="bold" className="h-3.5 w-3.5" />
+                  Clear
+                </Button>
+              )}
+            </div>
           </Panel>
           <Panel
             position="top-right"
@@ -304,18 +343,18 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
                   Try a flow
                 </p>
                 <p className="mt-1 text-xs">
-                  Use the buttons above the diagram to animate a standard chat
-                  request or an agent chat request.
+                  Pick a flow above, then use Previous and Next to step through
+                  the request path at your own pace.
                 </p>
               </div>
               <div className="mt-4 rounded-lg border border-kumo-line p-3">
                 <p className="text-xs font-medium text-kumo-default">
-                  WAF note
+                  Protection boundary
                 </p>
                 <p className="mt-1 text-xs">
-                  The app hostnames use the zone WAF and bot rules. The AI
-                  Gateway custom hostname has a scoped skip rule so
-                  server-to-server calls are not challenged.
+                  The Application lane is protected by Cloudflare Access and
+                  WAF. The AI Gateway custom hostname has a scoped WAF skip rule
+                  so server-to-server calls are not challenged.
                 </p>
               </div>
             </div>
