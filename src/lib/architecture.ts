@@ -34,6 +34,9 @@ export type ArchitectureNodeData = {
 export type ArchitectureFlowNode = Node<ArchitectureNodeData, "architecture">;
 export type ArchitectureLaneData = {
   label: string;
+  subtitle?: string;
+  badges?: string[];
+  tone?: "neutral" | "blue";
   active?: boolean;
   dimmed?: boolean;
 };
@@ -62,7 +65,6 @@ export const FLOWS: FlowDefinition[] = [
     color: "#3b82f6",
     nodeIds: [
       "browser",
-      "access",
       "frontend",
       "standard-worker",
       "gateway-access",
@@ -78,7 +80,6 @@ export const FLOWS: FlowDefinition[] = [
     color: "#8b5cf6",
     nodeIds: [
       "browser",
-      "access",
       "frontend",
       "agent-worker",
       "agent-do",
@@ -102,8 +103,8 @@ export const architectureNodes: ArchitectureNode[] = [
     id: "lane-edge",
     type: "lane",
     position: { x: -40, y: 20 },
-    style: { width: 540, height: 700, pointerEvents: "none" },
-    data: { label: "Client and edge" },
+    style: { width: 460, height: 760, pointerEvents: "none" },
+    data: { label: "Client" },
     selectable: false,
     draggable: false,
     connectable: false,
@@ -112,9 +113,14 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "lane-app",
     type: "lane",
-    position: { x: 500, y: 20 },
-    style: { width: 720, height: 700, pointerEvents: "none" },
-    data: { label: "Application" },
+    position: { x: 440, y: 20 },
+    style: { width: 800, height: 760, pointerEvents: "none" },
+    data: {
+      label: "Application",
+      subtitle: "Protected by Cloudflare Access + WAF",
+      badges: ["Access", "WAF", "Gateway skip"],
+      tone: "blue",
+    },
     selectable: false,
     draggable: false,
     connectable: false,
@@ -153,56 +159,6 @@ export const architectureNodes: ArchitectureNode[] = [
     },
   },
   {
-    id: "access",
-    type: "architecture",
-    position: { x: 250, y: 260 },
-    data: {
-      title: "Cloudflare Access",
-      subtitle: "Identity at the edge",
-      icon: "access",
-      tone: "blue",
-      badges: ["SSO", "JWT"],
-      details: {
-        summary:
-          "Cloudflare Access verifies the user's identity before requests reach the application.",
-        bullets: [
-          "Protects the frontend hostname.",
-          "Issues a signed JWT containing the user's email.",
-          "The same identity is used for AI Gateway attribution.",
-        ],
-        docs: {
-          label: "Access documentation",
-          href: "https://developers.cloudflare.com/cloudflare-one/access-controls/",
-        },
-      },
-    },
-  },
-  {
-    id: "waf",
-    type: "architecture",
-    position: { x: 250, y: 500 },
-    data: {
-      title: "WAF and bot rules",
-      subtitle: "Zone protection",
-      icon: "waf",
-      tone: "orange",
-      badges: ["Managed rules", "Gateway skip"],
-      details: {
-        summary:
-          "The zone's WAF and bot rules inspect requests before they reach the app.",
-        bullets: [
-          "Managed rules and custom bot rules apply to the app hostnames.",
-          "The AI Gateway custom hostname has a scoped skip rule so server-to-server calls are not blocked.",
-          "The skip is limited to the gateway hostname.",
-        ],
-        docs: {
-          label: "WAF documentation",
-          href: "https://developers.cloudflare.com/waf/",
-        },
-      },
-    },
-  },
-  {
     id: "frontend",
     type: "architecture",
     position: { x: 520, y: 260 },
@@ -230,7 +186,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "standard-worker",
     type: "architecture",
-    position: { x: 770, y: 100 },
+    position: { x: 770, y: 140 },
     data: {
       title: "Standard chat Worker",
       subtitle: "REST chat endpoint",
@@ -251,7 +207,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "agent-worker",
     type: "architecture",
-    position: { x: 770, y: 420 },
+    position: { x: 770, y: 440 },
     data: {
       title: "Agent Worker",
       subtitle: "WebSocket agent",
@@ -276,7 +232,7 @@ export const architectureNodes: ArchitectureNode[] = [
   {
     id: "agent-do",
     type: "architecture",
-    position: { x: 1000, y: 420 },
+    position: { x: 1000, y: 440 },
     data: {
       title: "Chat agent Durable Object",
       subtitle: "Per-room state",
@@ -461,32 +417,11 @@ const edgeDefaults = {
 export const architectureEdges: ArchitectureEdge[] = [
   {
     ...edgeDefaults,
-    id: "browser-access",
+    id: "browser-frontend",
     source: "browser",
-    target: "access",
-    label: "Access session",
-    data: { flows: ["standard", "agent"] },
-  },
-  {
-    ...edgeDefaults,
-    id: "access-frontend",
-    source: "access",
     target: "frontend",
-    label: "JWT",
+    label: "HTTPS",
     data: { flows: ["standard", "agent"] },
-  },
-  {
-    ...edgeDefaults,
-    id: "waf-frontend",
-    type: "straight",
-    source: "waf",
-    target: "frontend",
-    sourceHandle: "top-source",
-    targetHandle: "bottom-target",
-    label: "bot rules",
-    animated: false,
-    style: { ...edgeDefaults.style, strokeDasharray: "6 4" },
-    data: { flows: [] },
   },
   {
     ...edgeDefaults,
