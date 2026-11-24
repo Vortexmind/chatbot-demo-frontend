@@ -157,7 +157,7 @@ function TimelinePill({
                 {label}
               </span>
               {event.source === "agent" && (
-                <Badge variant="blue-subtle" className="text-xs">
+                <Badge variant="info" className="text-xs">
                   Agent
                 </Badge>
               )}
@@ -179,14 +179,14 @@ function TimelinePill({
             {(isResponse || isBlocked || isStreaming) && (
               <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                 {event.model && (
-                  <Badge variant="blue-subtle" className="text-xs">
+                  <Badge variant="info" className="text-xs">
                     {event.model.length > 20
                       ? event.model.slice(0, 20) + "..."
                       : event.model}
                   </Badge>
                 )}
                 {event.provider && (
-                  <Badge variant="neutral-subtle" className="text-xs">
+                  <Badge variant="secondary" className="text-xs">
                     {event.provider}
                   </Badge>
                 )}
@@ -255,7 +255,7 @@ export function AIGatewayDrawer({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-medium text-base text-kumo-default">AI Gateway</span>
-            <Badge variant="neutral-subtle">{requestCount} requests</Badge>
+            <Badge variant="secondary">{requestCount} requests</Badge>
             {blockedCount > 0 && (
               <Badge variant="red">{blockedCount} blocked</Badge>
             )}
