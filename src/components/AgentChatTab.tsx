@@ -9,6 +9,7 @@ import {
   Robot,
   Trash,
   WifiSlash,
+  XCircle,
 } from "@phosphor-icons/react";
 import type { UIMessage } from "ai";
 import { AGENT_HOST, AGENT_NAME } from "@/lib/constants";
@@ -147,6 +148,10 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
     clearHistory,
     addToolApprovalResponse,
     status,
+    error: chatError,
+    isStreaming: isChatStreaming,
+    isServerStreaming,
+    isRecovering,
   } = useAgentChat({
     agent,
     credentials: "include",
@@ -163,7 +168,12 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
     },
   });
 
-  const isBusy = status === "submitted" || status === "streaming";
+  const isBusy =
+    status === "submitted" ||
+    status === "streaming" ||
+    isChatStreaming ||
+    isServerStreaming ||
+    isRecovering;
   const activeTool = isBusy ? getActiveTool(messages) : null;
   const lastMessage = messages[messages.length - 1];
   const showTyping = isBusy && !hasAssistantContent(lastMessage);
@@ -181,13 +191,35 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
       return;
     }
 
-    if (status === "error") {
-      onEventUpdate?.(eventId, { type: "error" });
+    if (status === "error" || chatError) {
+      const err = chatError as
+        | { statusCode?: number; message?: string; responseBody?: string }
+        | undefined;
+      const details = `${err?.message ?? ""} ${err?.responseBody ?? ""}`;
+      const blocked =
+        err?.statusCode === 424 ||
+        /424|DLP|guardrail|blocked/i.test(details);
+      onEventUpdate?.(
+        eventId,
+        blocked
+          ? {
+              type: "blocked",
+              httpStatus: 424,
+              blockReason: "Blocked by AI Gateway policy",
+            }
+          : { type: "error" }
+      );
       requestEventRef.current = null;
       return;
     }
 
-    if (status === "ready" && !finalizedRef.current) {
+    if (
+      status === "ready" &&
+      !isChatStreaming &&
+      !isServerStreaming &&
+      !isRecovering &&
+      !finalizedRef.current
+    ) {
       const lastAssistant = [...messages]
         .reverse()
         .find((message) => message.role === "assistant");
@@ -207,7 +239,15 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
         requestEventRef.current = null;
       }
     }
-  }, [status, messages, onEventUpdate]);
+  }, [
+    status,
+    messages,
+    onEventUpdate,
+    chatError,
+    isChatStreaming,
+    isServerStreaming,
+    isRecovering,
+  ]);
 
   const startRequest = useCallback(
     (prompt: string) => {
@@ -396,6 +436,29 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
           </div>
         )}
       </div>
+
+      {chatError && (
+        <div className="flex-shrink-0 mx-4 mb-2 p-3 rounded-lg border border-kumo-danger-subtle bg-kumo-danger-tint text-sm flex items-start gap-2">
+          <XCircle weight="fill" className="h-4 w-4 text-kumo-danger mt-0.5" />
+          <div>
+            <p className="font-medium text-kumo-default">
+              Agent request blocked or failed
+            </p>
+            <p className="text-kumo-strong">
+              AI Gateway may have blocked this request via a guardrail or DLP
+              policy.
+            </p>
+            <details className="mt-1">
+              <summary className="text-xs text-kumo-subtle cursor-pointer">
+                Details
+              </summary>
+              <pre className="mt-1 text-xs bg-kumo-base p-2 rounded overflow-x-auto max-h-32 overflow-y-auto whitespace-pre-wrap">
+                {chatError.message}
+              </pre>
+            </details>
+          </div>
+        </div>
+      )}
 
       <div className="flex-shrink-0 border-t border-kumo-line p-4">
         <AgentChatInput
