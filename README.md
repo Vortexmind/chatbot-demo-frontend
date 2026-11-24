@@ -9,11 +9,11 @@ Built with [Kumo](https://github.com/cloudflare/kumo), Cloudflare's open-source 
 - **AI Gateway Integration** - Displays model/provider routing info, highlights changes, shows block reasons
 - **Activity Timeline** - Collapsible panel showing all AI Gateway events (requests, responses, blocks)
 - **Block Differentiation** - Visual distinction between rate limits (orange) and content blocks (red) with detailed error info
-- **Preset Demo Prompts** - Clickable prompts to demonstrate AI Gateway guardrails (content policy, DLP)
+- **Preset Demo Prompts** - Clickable prompts covering guardrails, DLP, routing, coding, translation, and creative writing
 - **File Attachments** - Support for images and documents with automatic model routing
-- **Username-based Chat** - Users enter a username for per-user rate limiting in AI Gateway
+- **Access identity** - Uses the email from the Cloudflare Access token for display and AI Gateway attribution
 - **Dark Mode** - Toggle between light and dark themes with automatic persistence
-- **Cloudflare Access Auth** - Reads `CF_Authorization` cookie for backend authentication
+- **Cloudflare Access Auth** - Reads the `CF_Authorization` cookie for backend authentication and identity display
 - **Agent Chat** - Second tab backed by a Workers AI agent with server tools, browser tools, approval-gated tools, and Cloudflare docs search
 
 ## Tech Stack
@@ -62,7 +62,9 @@ This application expects to be protected by [Cloudflare Access](https://develope
 2. Create an application for your frontend domain
 3. Configure authentication policies as needed
 
-When users authenticate through Cloudflare Access, a `CF_Authorization` cookie is set automatically. The frontend reads this cookie and sends it to the backend API for authentication.
+When users authenticate through Cloudflare Access, a `CF_Authorization` cookie is set automatically. The frontend reads this cookie, decodes the email for display, and sends the token to the backend API for authentication.
+
+The backend sends the verified Access email to AI Gateway as `cf-aig-metadata` keys `user_id` and `user`, so the AI Gateway User Insights dashboard attributes requests and spend to the signed-in user.
 
 ## Getting Started
 

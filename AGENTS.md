@@ -61,7 +61,8 @@ src/
 └── lib/
     ├── constants.ts     # API_URL, file limits, presets
     ├── types.ts         # All TypeScript types
-    └── utils.ts         # Cookie and username helpers
+    ├── access.ts        # Access identity helpers
+    └── utils.ts         # Cookie helpers
 ```
 
 ## Code Style Guidelines
@@ -97,11 +98,11 @@ import { PaperPlaneRight } from "@phosphor-icons/react";
 
 ### page.tsx
 Owns the chat state and the request lifecycle:
-- Reads the `CF_Authorization` cookie and sends it as `CF-Access-JWT-Assertion`
-- POSTs to `API_URL` with `{ prompt, username, attachments?, stream: true }`
+- Reads the `CF_Authorization` cookie, sends it as `CF-Access-JWT-Assertion`, and decodes the email for display
+- POSTs to `API_URL` with `{ prompt, attachments?, stream: true }`; the backend derives identity from the verified token
 - Parses the SSE stream and appends tokens to the last bot message
 - Records AI Gateway events (request, streaming, response, blocked, error)
-- Persists username, dark mode, and drawer state in localStorage
+- Persists dark mode and drawer state in localStorage
 
 ### ChatLayout.tsx
 Page shell with the header, dark mode toggle, AI Gateway drawer button, and the scrollable content column.
@@ -188,7 +189,7 @@ Use the `markdown-content` class (defined in `globals.css`) for rendered markdow
 
 ## Common Gotchas
 
-1. **CF Access cookie**: The backend expects `CF-Access-JWT-Assertion`; the frontend reads it from the `CF_Authorization` cookie
+1. **CF Access cookie**: The backend expects `CF-Access-JWT-Assertion`; the frontend reads it from the `CF_Authorization` cookie. The same token supplies the email shown in the header and the `user_id` metadata used by AI Gateway User Insights.
 2. **Streaming vs JSON**: Errors are always JSON even when `stream: true`, so check `response.status` before reading the body
 3. **Markdown styling**: Use `markdown-content`, not `prose`
 4. **Attachments**: Only the first attachment is sent to the backend

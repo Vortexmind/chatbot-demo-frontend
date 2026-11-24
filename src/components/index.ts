@@ -20,5 +20,4 @@ export { AgentChatMessage } from "./AgentChatMessage";
 export { AgentChatInput } from "./AgentChatInput";
 
 // Dialogs and panels
-export { UsernameDialog } from "./UsernameDialog";
 export { AIGatewayDrawer } from "./AIGatewayDrawer";

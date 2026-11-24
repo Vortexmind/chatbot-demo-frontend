@@ -16,7 +16,6 @@ type ChatLayoutProps = {
   isDarkMode: boolean;
   onDarkModeToggle: (isDark: boolean) => void;
   username?: string;
-  onChangeUsername?: () => void;
   isDrawerOpen: boolean;
   onDrawerToggle: () => void;
   drawerContent?: ReactNode;
@@ -31,7 +30,6 @@ export function ChatLayout({
   isDarkMode,
   onDarkModeToggle,
   username,
-  onChangeUsername,
   isDrawerOpen,
   onDrawerToggle,
   drawerContent,
@@ -57,18 +55,6 @@ export function ChatLayout({
                   <p className="text-sm text-kumo-strong">
                     Chatting as{" "}
                     <span className="font-medium text-kumo-default">{username}</span>
-                    {onChangeUsername && (
-                      <>
-                        <span className="mx-1.5 text-kumo-subtle">·</span>
-                        <button
-                          type="button"
-                          onClick={onChangeUsername}
-                          className="text-kumo-link underline hover:text-kumo-link-hover"
-                        >
-                          Change
-                        </button>
-                      </>
-                    )}
                   </p>
                 )}
                 <p className="text-sm text-kumo-strong">

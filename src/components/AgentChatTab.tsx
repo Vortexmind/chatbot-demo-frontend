@@ -22,6 +22,7 @@ import { SenderLabel } from "./SenderLabel";
 type ConnectionState = "connecting" | "connected" | "error";
 
 type AgentChatTabProps = {
+  userEmail?: string;
   onEvent?: (event: Omit<AIGatewayEvent, "id" | "timestamp">) => string;
   onEventUpdate?: (id: string, updates: Partial<AIGatewayEvent>) => void;
 };
@@ -35,10 +36,18 @@ type ToolPart = {
 const ROOM_KEY = "chatbot_agent_room";
 
 const EXAMPLE_PROMPTS = [
-  "What's the weather in Paris?",
-  "What timezone am I in?",
-  "What is 5000 * 3?",
-  "How does AI Gateway authentication work?",
+  { label: "Paris weather", prompt: "What's the weather in Paris?" },
+  { label: "My timezone", prompt: "What timezone am I in?" },
+  { label: "Math", prompt: "What is 5000 * 3?" },
+  { label: "Compare weather", prompt: "Compare the weather in Tokyo and London." },
+  { label: "AI Gateway auth", prompt: "How does AI Gateway authentication work?" },
+  {
+    label: "User Insights docs",
+    prompt:
+      "Search the Cloudflare docs for User Insights and summarize how identity attribution works.",
+  },
+  { label: "Lisbon itinerary", prompt: "Plan a three-day itinerary for Lisbon." },
+  { label: "Available tools", prompt: "What tools do you have?" },
 ];
 
 function getOrCreateRoom(): string {
@@ -89,6 +98,21 @@ function hasAssistantContent(message: UIMessage | undefined): boolean {
   });
 }
 
+function isGatewayBlock(error: unknown): boolean {
+  if (!error) return false;
+  const err = error as {
+    statusCode?: number;
+    message?: string;
+    responseBody?: string;
+  };
+  return (
+    err.statusCode === 424 ||
+    /424|DLP|guardrail|blocked/i.test(
+      `${err.message ?? ""} ${err.responseBody ?? ""}`
+    )
+  );
+}
+
 function isAssistantComplete(message: UIMessage | undefined): boolean {
   if (!message || message.role !== "assistant") return false;
   const hasText = message.parts.some(
@@ -106,11 +130,16 @@ function isAssistantComplete(message: UIMessage | undefined): boolean {
   return hasText && !hasPendingTool;
 }
 
-export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
+export function AgentChatTab({
+  userEmail,
+  onEvent,
+  onEventUpdate,
+}: AgentChatTabProps) {
   const [input, setInput] = useState("");
   const [room, setRoom] = useState<string>(() => getOrCreateRoom());
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [errorDismissed, setErrorDismissed] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const requestEventRef = useRef<string | null>(null);
   const finalizedRef = useRef(false);
@@ -155,6 +184,7 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
   } = useAgentChat({
     agent,
     credentials: "include",
+    body: () => ({ userEmail }),
     onToolCall: async ({ toolCall, addToolOutput }) => {
       if (toolCall.toolName === "getUserTimezone") {
         addToolOutput({
@@ -177,6 +207,7 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
   const activeTool = isBusy ? getActiveTool(messages) : null;
   const lastMessage = messages[messages.length - 1];
   const showTyping = isBusy && !hasAssistantContent(lastMessage);
+  const blockedError = isGatewayBlock(chatError);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -192,13 +223,7 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
     }
 
     if (status === "error" || chatError) {
-      const err = chatError as
-        | { statusCode?: number; message?: string; responseBody?: string }
-        | undefined;
-      const details = `${err?.message ?? ""} ${err?.responseBody ?? ""}`;
-      const blocked =
-        err?.statusCode === 424 ||
-        /424|DLP|guardrail|blocked/i.test(details);
+      const blocked = isGatewayBlock(chatError);
       onEventUpdate?.(
         eventId,
         blocked
@@ -252,6 +277,7 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
   const startRequest = useCallback(
     (prompt: string) => {
       finalizedRef.current = false;
+      setErrorDismissed(false);
       requestEventRef.current =
         onEvent?.({
           type: "request",
@@ -286,6 +312,7 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
     window.sessionStorage.setItem(ROOM_KEY, nextRoom);
     setRoom(nextRoom);
     setInput("");
+    setErrorDismissed(true);
     requestEventRef.current = null;
     finalizedRef.current = false;
   }, [clearHistory]);
@@ -386,14 +413,14 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
                 server tools, browser tools, and approval-gated tools.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                {EXAMPLE_PROMPTS.map((prompt) => (
+                {EXAMPLE_PROMPTS.map((example) => (
                   <Button
-                    key={prompt}
+                    key={example.label}
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleExample(prompt)}
+                    onClick={() => handleExample(example.prompt)}
                   >
-                    {prompt}
+                    {example.label}
                   </Button>
                 ))}
               </div>
@@ -437,16 +464,19 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
         )}
       </div>
 
-      {chatError && (
+      {chatError && !errorDismissed && (
         <div className="flex-shrink-0 mx-4 mb-2 p-3 rounded-lg border border-kumo-danger-subtle bg-kumo-danger-tint text-sm flex items-start gap-2">
           <XCircle weight="fill" className="h-4 w-4 text-kumo-danger mt-0.5" />
-          <div>
+          <div className="flex-1">
             <p className="font-medium text-kumo-default">
-              Agent request blocked or failed
+              {blockedError
+                ? "Request blocked by AI Gateway"
+                : "Agent request failed"}
             </p>
             <p className="text-kumo-strong">
-              AI Gateway may have blocked this request via a guardrail or DLP
-              policy.
+              {blockedError
+                ? "This conversation contains content that AI Gateway blocks. New prompts in this chat will also be blocked. Start a new chat to continue."
+                : "The agent request failed. Check the details or start a new chat."}
             </p>
             <details className="mt-1">
               <summary className="text-xs text-kumo-subtle cursor-pointer">
@@ -456,6 +486,11 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
                 {chatError.message}
               </pre>
             </details>
+            <div className="mt-2">
+              <Button variant="secondary" size="sm" onClick={handleNewChat}>
+                Start new chat
+              </Button>
+            </div>
           </div>
         </div>
       )}

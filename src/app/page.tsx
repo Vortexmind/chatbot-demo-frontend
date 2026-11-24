@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import {
   ChatLayout,
-  UsernameDialog,
   AIGatewayDrawer,
   ChatMessageList,
   ChatInput,
@@ -12,6 +11,7 @@ import {
 } from "@/components";
 import { API_URL } from "@/lib/constants";
 import { getCookie } from "@/lib/utils";
+import { getAccessIdentityEmail } from "@/lib/access";
 import type {
   Message,
   Attachment,
@@ -50,8 +50,7 @@ function parseSSEData(line: string): string | null {
 
 export default function Home() {
   const [input, setInput] = useState("");
-  const [username, setUsername] = useState("");
-  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [aigInfo, setAigInfo] = useState<AIGatewayInfo>({
@@ -72,7 +71,7 @@ export default function Home() {
   // Ref to track current aigInfo for comparison in submitMessage
   const aigInfoRef = useRef<AIGatewayInfo>(aigInfo);
 
-  const hasUsername = username.trim().length > 0;
+  const hasUserEmail = userEmail.trim().length > 0;
   const blockedCount = aigEvents.filter((e) => e.type === "blocked").length;
 
   // Keep aigInfoRef in sync
@@ -80,14 +79,12 @@ export default function Home() {
     aigInfoRef.current = aigInfo;
   }, [aigInfo]);
 
-  // Load username, dark mode, and drawer preferences from localStorage on mount
+  // Load the Access identity and UI preferences on mount
   useEffect(() => {
-    const storedUsername = localStorage.getItem("chatbot_username");
-    if (storedUsername) {
-      setUsername(storedUsername);
-    } else {
-      setShowUsernameDialog(true);
-    }
+    let mounted = true;
+    getAccessIdentityEmail().then((email) => {
+      if (mounted) setUserEmail(email);
+    });
 
     const storedDarkMode = localStorage.getItem("chatbot_dark_mode");
     if (storedDarkMode === "true") {
@@ -104,6 +101,10 @@ export default function Home() {
     if (storedTab === "standard" || storedTab === "agent") {
       setActiveTab(storedTab);
     }
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleDarkModeToggle = useCallback((isDark: boolean) => {
@@ -155,16 +156,6 @@ export default function Home() {
   const clearEvents = useCallback(() => {
     setAigEvents([]);
   }, []);
-
-  const handleUsernameSubmit = (name: string) => {
-    localStorage.setItem("chatbot_username", name);
-    setUsername(name);
-    setShowUsernameDialog(false);
-  };
-
-  const handleChangeUsername = () => {
-    setShowUsernameDialog(true);
-  };
 
   const handleAttachmentAdd = (attachment: Attachment) => {
     setAttachments((prev) => [...prev, attachment]);
@@ -225,12 +216,10 @@ export default function Home() {
     try {
       const requestBody: {
         prompt: string;
-        username: string;
         attachments?: Attachment[];
         stream: boolean;
       } = {
         prompt: trimmedInput,
-        username: username.trim(),
         stream: true,
       };
       if (messageAttachments.length > 0) {
@@ -438,7 +427,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [username, addEvent, updateEvent]);
+  }, [addEvent, updateEvent]);
 
   // Handle submit from input (uses current input state and attachments)
   const handleSubmit = useCallback(() => {
@@ -466,8 +455,7 @@ export default function Home() {
     <ChatLayout
       isDarkMode={isDarkMode}
       onDarkModeToggle={handleDarkModeToggle}
-      username={hasUsername ? username : undefined}
-      onChangeUsername={handleChangeUsername}
+      username={hasUserEmail ? userEmail : undefined}
       isDrawerOpen={isDrawerOpen}
       onDrawerToggle={handleDrawerToggle}
       drawerContent={drawerContent}
@@ -476,24 +464,18 @@ export default function Home() {
       activeTab={activeTab}
       onTabChange={handleTabChange}
     >
-      <UsernameDialog
-        open={showUsernameDialog && activeTab === "standard"}
-        initialUsername={username}
-        onSubmit={handleUsernameSubmit}
-      />
-
       {activeTab === "standard" ? (
         <>
           {/* Chat messages - flex-1 to fill available space */}
           <ChatMessageList
             messages={messages}
-            username={username}
+            username={userEmail}
             loading={loading}
           />
 
           {/* Preset prompts above input */}
           <div className="mt-4 mb-2">
-            <PresetPrompts onSelect={handlePresetClick} disabled={loading || !hasUsername} />
+            <PresetPrompts onSelect={handlePresetClick} disabled={loading || !hasUserEmail} />
           </div>
 
           {/* Chat input */}
@@ -504,12 +486,13 @@ export default function Home() {
             onAttachmentAdd={handleAttachmentAdd}
             onAttachmentRemove={handleAttachmentRemove}
             onSubmit={handleSubmit}
-            disabled={!hasUsername}
+            disabled={!hasUserEmail}
             loading={loading}
           />
         </>
       ) : (
         <AgentChatTab
+          userEmail={userEmail}
           onEvent={handleAgentEvent}
           onEventUpdate={updateEvent}
         />
