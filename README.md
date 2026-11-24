@@ -15,6 +15,7 @@ Built with [Kumo](https://github.com/cloudflare/kumo), Cloudflare's open-source 
 - **Dark Mode** - Toggle between light and dark themes with automatic persistence
 - **Cloudflare Access Auth** - Reads the `CF_Authorization` cookie for backend authentication and identity display
 - **Agent Chat** - Second tab backed by a Workers AI agent with server tools, browser tools, approval-gated tools, and Cloudflare docs search
+- **Architecture Tab** - Interactive React Flow diagram of the standard and agent request paths, with clickable components and manual step navigation
 
 ## Tech Stack
 

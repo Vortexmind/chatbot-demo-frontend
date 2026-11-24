@@ -43,11 +43,14 @@ src/
 ├── app/
 │   ├── globals.css      # Kumo styles, Tailwind, markdown-content class
 │   ├── layout.tsx       # Root layout with Kumo theme provider
-│   └── page.tsx         # Main page: state, submit logic, streaming, drawer
+│   └── page.tsx         # Main page: tabs, state, submit logic, streaming, drawer
 ├── components/
 │   ├── AIGatewayDrawer.tsx       # Activity timeline drawer
+│   ├── ArchitectureLane.tsx      # Diagram lane backgrounds and protection header
+│   ├── ArchitectureNode.tsx      # Diagram component card
+│   ├── ArchitectureTab.tsx       # React Flow diagram and step navigation
 │   ├── ChatInput.tsx             # Input with file attachments
-│   ├── ChatLayout.tsx            # Page shell, dark mode, drawer
+│   ├── ChatLayout.tsx            # Page shell, tabs, dark mode, drawer
 │   ├── ChatMessage.tsx           # Message bubble
 │   ├── ChatMessageList.tsx       # Scrollable message list
 │   ├── DarkModeToggle.tsx        # Theme toggle
@@ -56,12 +59,12 @@ src/
 │   ├── PresetPrompts.tsx         # Demo prompt chips
 │   ├── SenderLabel.tsx           # Sender name and icon
 │   ├── StreamingCursor.tsx       # Streaming indicator
-│   ├── UsernameDialog.tsx        # Username entry modal
 │   └── index.ts                  # Barrel exports
 └── lib/
     ├── constants.ts     # API_URL, file limits, presets
     ├── types.ts         # All TypeScript types
     ├── access.ts        # Access identity helpers
+    ├── architecture.ts  # Diagram nodes, edges, lanes, and flows
     └── utils.ts         # Cookie helpers
 ```
 
@@ -117,6 +120,15 @@ Agent tab backed by the separate `chatbot-demo-agent` Worker:
 - The agent Worker is on the same hostname, so the existing Cloudflare Access application covers it.
 - Room IDs live in `sessionStorage`, so closing the browser starts a fresh conversation.
 - `onEvent` and `onEventUpdate` feed agent request, streaming, response, and error events into the AI Gateway drawer.
+
+### ArchitectureTab.tsx
+Third tab with a React Flow diagram of the request paths:
+- `src/lib/architecture.ts` defines the generic nodes, edges, lanes, and flow sequences.
+- `ArchitectureNode.tsx` renders each component card; `ArchitectureLane.tsx` renders the Client, Application, and AI platform lanes.
+- The Application lane is the protection macro for Cloudflare Access and WAF.
+- Selecting a flow highlights its path; Previous and Next step through the nodes at the user's pace.
+- The details panel follows the current step and shows component notes and docs links.
+- `ChatLayout` uses `wide` to remove the chat max-width for this tab.
 
 ### AIGatewayDrawer.tsx
 Timeline of AI Gateway events, current model/provider route, and block reasons.
