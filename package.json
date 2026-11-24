@@ -16,7 +16,7 @@
   "dependencies": {
     "@ai-sdk/react": "^4.0.184",
     "@cloudflare/ai-chat": "^0.12.3",
-    "@cloudflare/kumo": "^1.17.0",
+    "@cloudflare/kumo": "^2.19.0",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/postcss": "^4.3.5",
     "@xyflow/react": "^13.0.3",
@@ -29,14 +29,14 @@
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.20.18",
-    "@types/node": "25.4.0",
+    "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "eslint": "10.15.0",
     "eslint-config-next": "16.4.6",
     "postcss": "8.5.33",
     "tailwindcss": "^4.3.5",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "wrangler": "^4.148.0"
   },
   "scripts": {
