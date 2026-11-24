@@ -22,6 +22,7 @@ import { SenderLabel } from "./SenderLabel";
 type ConnectionState = "connecting" | "connected" | "error";
 
 type AgentChatTabProps = {
+  userEmail?: string;
   onEvent?: (event: Omit<AIGatewayEvent, "id" | "timestamp">) => string;
   onEventUpdate?: (id: string, updates: Partial<AIGatewayEvent>) => void;
 };
@@ -35,10 +36,18 @@ type ToolPart = {
 const ROOM_KEY = "chatbot_agent_room";
 
 const EXAMPLE_PROMPTS = [
-  "What's the weather in Paris?",
-  "What timezone am I in?",
-  "What is 5000 * 3?",
-  "How does AI Gateway authentication work?",
+  { label: "Paris weather", prompt: "What's the weather in Paris?" },
+  { label: "My timezone", prompt: "What timezone am I in?" },
+  { label: "Math", prompt: "What is 5000 * 3?" },
+  { label: "Compare weather", prompt: "Compare the weather in Tokyo and London." },
+  { label: "AI Gateway auth", prompt: "How does AI Gateway authentication work?" },
+  {
+    label: "User Insights docs",
+    prompt:
+      "Search the Cloudflare docs for User Insights and summarize how identity attribution works.",
+  },
+  { label: "Lisbon itinerary", prompt: "Plan a three-day itinerary for Lisbon." },
+  { label: "Available tools", prompt: "What tools do you have?" },
 ];
 
 function getOrCreateRoom(): string {
@@ -121,7 +130,11 @@ function isAssistantComplete(message: UIMessage | undefined): boolean {
   return hasText && !hasPendingTool;
 }
 
-export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
+export function AgentChatTab({
+  userEmail,
+  onEvent,
+  onEventUpdate,
+}: AgentChatTabProps) {
   const [input, setInput] = useState("");
   const [room, setRoom] = useState<string>(() => getOrCreateRoom());
   const [connection, setConnection] = useState<ConnectionState>("connecting");
@@ -171,6 +184,7 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
   } = useAgentChat({
     agent,
     credentials: "include",
+    body: () => ({ userEmail }),
     onToolCall: async ({ toolCall, addToolOutput }) => {
       if (toolCall.toolName === "getUserTimezone") {
         addToolOutput({
@@ -399,14 +413,14 @@ export function AgentChatTab({ onEvent, onEventUpdate }: AgentChatTabProps) {
                 server tools, browser tools, and approval-gated tools.
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                {EXAMPLE_PROMPTS.map((prompt) => (
+                {EXAMPLE_PROMPTS.map((example) => (
                   <Button
-                    key={prompt}
+                    key={example.label}
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleExample(prompt)}
+                    onClick={() => handleExample(example.prompt)}
                   >
-                    {prompt}
+                    {example.label}
                   </Button>
                 ))}
               </div>
