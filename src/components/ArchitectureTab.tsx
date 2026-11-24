@@ -9,6 +9,7 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
+  type NodeTypes,
 } from "@xyflow/react";
 import { Button } from "@cloudflare/kumo";
 import {
@@ -22,12 +23,17 @@ import {
   architectureNodes,
   FLOWS,
   type ArchitectureEdge,
+  type ArchitectureFlowNode,
   type ArchitectureNode,
   type FlowId,
 } from "@/lib/architecture";
+import { ArchitectureLane as ArchitectureLaneComponent } from "./ArchitectureLane";
 import { ArchitectureNode as ArchitectureNodeComponent } from "./ArchitectureNode";
 
-const nodeTypes = { architecture: ArchitectureNodeComponent };
+const nodeTypes = {
+  architecture: ArchitectureNodeComponent,
+  lane: ArchitectureLaneComponent,
+} as NodeTypes;
 
 type ArchitectureTabProps = {
   isDarkMode: boolean;
@@ -54,16 +60,19 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
 
   const displayNodes = useMemo(
     () =>
-      nodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          active: node.id === activeNodeId,
-          dimmed: Boolean(
-            activeFlowDef && !activeFlowDef.nodeIds.includes(node.id),
-          ),
-        },
-      })),
+      nodes.map((node) => {
+        if (node.type === "lane") return node;
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            active: node.id === activeNodeId,
+            dimmed: Boolean(
+              activeFlowDef && !activeFlowDef.nodeIds.includes(node.id),
+            ),
+          },
+        };
+      }),
     [nodes, activeNodeId, activeFlowDef],
   );
 
@@ -125,7 +134,11 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
   }, []);
 
   const selectedNode = useMemo(
-    () => nodes.find((node) => node.id === selectedId) ?? null,
+    () =>
+      nodes.find(
+        (node): node is ArchitectureFlowNode =>
+          node.type === "architecture" && node.id === selectedId,
+      ) ?? null,
     [nodes, selectedId],
   );
 
@@ -138,7 +151,9 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => setSelectedId(node.id)}
+          onNodeClick={(_, node) => {
+            if (node.type === "architecture") setSelectedId(node.id);
+          }}
           fitView
           fitViewOptions={{ padding: 0.15 }}
           minZoom={0.15}
@@ -156,7 +171,9 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
           <MiniMap
             pannable
             zoomable
-            nodeColor="#94a3b8"
+            nodeColor={(node) =>
+              node.type === "lane" ? "rgba(148, 163, 184, 0.12)" : "#94a3b8"
+            }
             maskColor={
               isDarkMode ? "rgba(15, 23, 42, 0.72)" : "rgba(241, 245, 249, 0.72)"
             }
