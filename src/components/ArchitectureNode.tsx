@@ -1,0 +1,122 @@
+"use client";
+
+import { Handle, Position, type NodeProps } from "@xyflow/react";
+import {
+  ArrowsLeftRight,
+  Browser,
+  Browsers,
+  ChartLine,
+  Cloud,
+  Database,
+  Lightning,
+  LockKey,
+  Path,
+  Robot,
+  ShieldCheck,
+  type Icon,
+} from "@phosphor-icons/react";
+import type {
+  ArchitectureIcon,
+  ArchitectureNode as ArchitectureNodeType,
+  ArchitectureTone,
+} from "@/lib/architecture";
+
+const ICONS: Record<ArchitectureIcon, Icon> = {
+  browser: Browser,
+  frontend: Browsers,
+  access: LockKey,
+  waf: ShieldCheck,
+  worker: Cloud,
+  agent: Robot,
+  durable: Database,
+  gateway: ArrowsLeftRight,
+  guardrails: ShieldCheck,
+  router: Path,
+  "workers-ai": Lightning,
+  observability: ChartLine,
+};
+
+const TONES: Record<
+  ArchitectureTone,
+  { icon: string; ring: string; badge: string }
+> = {
+  neutral: {
+    icon: "bg-kumo-recessed text-kumo-strong",
+    ring: "ring-kumo-line",
+    badge: "bg-kumo-recessed text-kumo-strong",
+  },
+  blue: {
+    icon: "bg-kumo-info-tint text-kumo-link",
+    ring: "ring-kumo-brand/40",
+    badge: "bg-kumo-info-tint text-kumo-link",
+  },
+  violet: {
+    icon: "bg-kumo-recessed text-kumo-accent",
+    ring: "ring-kumo-accent/40",
+    badge: "bg-kumo-recessed text-kumo-accent",
+  },
+  orange: {
+    icon: "bg-kumo-warning-tint text-kumo-warning",
+    ring: "ring-kumo-warning/40",
+    badge: "bg-kumo-warning-tint text-kumo-warning",
+  },
+  green: {
+    icon: "bg-kumo-success-tint text-kumo-success",
+    ring: "ring-kumo-success/40",
+    badge: "bg-kumo-success-tint text-kumo-success",
+  },
+};
+
+export function ArchitectureNode({
+  data,
+  selected,
+}: NodeProps<ArchitectureNodeType>) {
+  const tone = TONES[data.tone];
+  const IconComponent = ICONS[data.icon];
+
+  return (
+    <div
+      className={`w-[220px] rounded-xl border border-kumo-line bg-kumo-base px-3 py-3 shadow-sm transition-all duration-300 ${
+        data.active ? `scale-[1.02] ring-2 ${tone.ring}` : ""
+      } ${selected ? "ring-2 ring-kumo-line" : ""} ${
+        data.dimmed ? "opacity-40" : ""
+      }`}
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!h-2 !w-2 !border-0 !bg-kumo-line"
+      />
+      <div className="flex items-start gap-2.5">
+        <div className={`rounded-lg p-1.5 ${tone.icon}`}>
+          <IconComponent weight="duotone" className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-tight text-kumo-default">
+            {data.title}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-tight text-kumo-strong">
+            {data.subtitle}
+          </p>
+        </div>
+      </div>
+      {data.badges && data.badges.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {data.badges.map((badge) => (
+            <span
+              key={badge}
+              className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${tone.badge}`}
+            >
+              {badge}
+            </span>
+          ))}
+        </div>
+      )}
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!h-2 !w-2 !border-0 !bg-kumo-line"
+      />
+    </div>
+  );
+}

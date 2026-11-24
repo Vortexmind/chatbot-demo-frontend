@@ -86,3 +86,36 @@
   margin: 0.5rem 0;
   font-style: italic;
 }
+
+/* React Flow theme alignment */
+.react-flow {
+  background: var(--color-kumo-canvas);
+}
+
+.react-flow__controls {
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.react-flow__controls-button {
+  background: var(--color-kumo-base);
+  border-bottom: 1px solid var(--color-kumo-line);
+  color: var(--color-kumo-contrast);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--color-kumo-recessed);
+}
+
+.react-flow__minimap {
+  background: var(--color-kumo-base);
+  border: 1px solid var(--color-kumo-line);
+  border-radius: 0.5rem;
+}
+
+.react-flow__attribution {
+  background: transparent;
+  color: var(--color-kumo-contrast);
+}

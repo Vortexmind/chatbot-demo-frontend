@@ -51,6 +51,6 @@ export type AIGatewayEvent = {
   source?: "standard" | "agent";
 };
 
-export type ChatTab = "standard" | "agent";
+export type ChatTab = "standard" | "agent" | "architecture";
 
 
