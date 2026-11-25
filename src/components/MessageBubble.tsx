@@ -18,14 +18,14 @@ export function MessageBubble({ isUser, isError, children }: MessageBubbleProps)
       return "bg-kumo-brand text-kumo-inverse";
     }
     if (isError) {
-      return "bg-kumo-danger-tint text-kumo-default ring ring-kumo-danger-subtle";
+      return "bg-kumo-danger-tint text-kumo-default ring ring-kumo-danger/40";
     }
     return "bg-kumo-base text-kumo-default ring ring-kumo-line";
   };
 
   return (
     <div
-      className={`inline-block px-4 py-2.5 rounded-lg max-w-[85%] ${getBubbleClasses()}`}
+      className={`inline-block max-w-[88%] min-w-0 break-words rounded-2xl px-3.5 py-2.5 text-left sm:max-w-[80%] sm:px-4 ${getBubbleClasses()}`}
     >
       {children}
     </div>

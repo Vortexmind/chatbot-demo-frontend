@@ -97,8 +97,13 @@ export default function Home() {
       document.documentElement.setAttribute("data-mode", "dark");
     }
 
+    // The activity panel is an inline sidebar on desktop but a full-height
+    // sheet below `lg`, so only restore the open state on wide viewports.
     const storedDrawer = localStorage.getItem("chatbot_drawer_open");
-    if (storedDrawer === "true") {
+    if (
+      storedDrawer === "true" &&
+      window.matchMedia("(min-width: 1024px)").matches
+    ) {
       setIsDrawerOpen(true);
     }
 
@@ -457,6 +462,7 @@ export default function Home() {
       info={aigInfo}
       isError={aigError}
       isHighlighted={aigHighlight}
+      onClose={handleDrawerToggle}
     />
   );
 
@@ -484,7 +490,7 @@ export default function Home() {
           />
 
           {/* Preset prompts above input */}
-          <div className="mt-4 mb-2">
+          <div className="mb-2 mt-3 shrink-0">
             <PresetPrompts onSelect={handlePresetClick} disabled={loading || !hasUserEmail} />
           </div>
 

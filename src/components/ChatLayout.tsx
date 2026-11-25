@@ -1,6 +1,6 @@
 "use client";
 
-import { CloudflareLogo, Link, Button, Badge } from "@cloudflare/kumo";
+import { CloudflareLogo, Button, Badge, Tabs } from "@cloudflare/kumo";
 import {
   Sidebar,
   ArrowCounterClockwise,
@@ -10,6 +10,8 @@ import {
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { DarkModeToggle } from "./DarkModeToggle";
+import { MobileSheet } from "./MobileSheet";
+import { useIsDesktop } from "@/lib/useMediaQuery";
 import type { ChatTab } from "@/lib/types";
 
 type ChatLayoutProps = {
@@ -27,6 +29,8 @@ type ChatLayoutProps = {
   wide?: boolean;
 };
 
+const TAB_ICON_CLASS = "h-4 w-4";
+
 export function ChatLayout({
   children,
   isDarkMode,
@@ -41,154 +45,178 @@ export function ChatLayout({
   onTabChange,
   wide = false,
 }: ChatLayoutProps) {
+  const isDesktop = useIsDesktop();
+
+  const tabs = [
+    {
+      value: "agent",
+      label: (
+        <span className="flex items-center justify-center gap-1.5">
+          <Robot weight={activeTab === "agent" ? "fill" : "regular"} className={TAB_ICON_CLASS} />
+          <span>Agent</span>
+        </span>
+      ),
+      className: "flex-1 justify-center px-2",
+    },
+    {
+      value: "standard",
+      label: (
+        <span className="flex items-center justify-center gap-1.5">
+          <ChatCircle
+            weight={activeTab === "standard" ? "fill" : "regular"}
+            className={TAB_ICON_CLASS}
+          />
+          <span>Standard</span>
+        </span>
+      ),
+      className: "flex-1 justify-center px-2",
+    },
+    {
+      value: "architecture",
+      label: (
+        <span className="flex items-center justify-center gap-1.5">
+          <Graph
+            weight={activeTab === "architecture" ? "fill" : "regular"}
+            className={TAB_ICON_CLASS}
+          />
+          <span>Architecture</span>
+        </span>
+      ),
+      className: "flex-1 justify-center px-2",
+    },
+  ];
+
+  const tabSwitcher = onTabChange ? (
+    <Tabs
+      tabs={tabs}
+      value={activeTab}
+      onValueChange={(value) => onTabChange(value as ChatTab)}
+      className="w-full"
+      listClassName="w-full"
+    />
+  ) : null;
+
+  const drawerToggleButton = (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onDrawerToggle}
+      aria-label="Toggle AI Gateway activity panel"
+      aria-expanded={isDrawerOpen}
+      className="h-9 gap-1 px-2"
+    >
+      <Sidebar weight="bold" className="h-4 w-4" />
+      <span className="hidden sm:inline">AI Gateway</span>
+      {blockedCount > 0 && (
+        <Badge variant="red" className="ml-0.5">
+          {blockedCount}
+        </Badge>
+      )}
+    </Button>
+  );
+
   return (
-    <main className="h-screen bg-kumo-canvas flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b border-kumo-line bg-kumo-base px-4 py-3 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-center justify-between">
-            {/* Left: Logo + Title stack */}
-            <div className="flex items-center gap-3">
-              <CloudflareLogo variant="glyph" className="h-10 w-10 flex-shrink-0" />
-              <div className="space-y-0.5">
-                <h1 className="text-2xl font-semibold text-kumo-default">
-                  Well-behaved chatbot
-                </h1>
-                {username && (
-                  <p className="text-sm text-kumo-strong">
+    <main className="flex h-dvh flex-col overflow-hidden bg-kumo-canvas">
+      <header className="z-20 flex-shrink-0 border-b border-kumo-line bg-kumo-base">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6 sm:py-2.5">
+          {/* Identity */}
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <CloudflareLogo
+              variant="glyph"
+              className="h-7 w-7 flex-shrink-0 sm:h-8 sm:w-8"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-[15px] font-semibold leading-tight text-kumo-default sm:text-base">
+                Well-behaved chatbot
+              </h1>
+              <p className="truncate text-xs leading-tight text-kumo-strong">
+                {username ? (
+                  <>
                     Chatting as{" "}
-                    <span className="font-medium text-kumo-default">{username}</span>
-                  </p>
+                    <span className="font-medium text-kumo-default">
+                      {username}
+                    </span>
+                  </>
+                ) : (
+                  "Workers AI + AI Gateway"
                 )}
-                <p className="text-sm text-kumo-strong">
-                  <Link href="https://developers.cloudflare.com/workers-ai/" className="text-kumo-link hover:underline">
-                    Workers AI
-                  </Link>
-                  <span className="mx-1">+</span>
-                  <Link href="https://developers.cloudflare.com/ai-gateway/" className="text-kumo-link hover:underline">
-                    AI Gateway
-                  </Link>
-                  <span className="mx-1.5 text-kumo-subtle">|</span>
-                  <Link href="https://github.com/cloudflare/kumo" className="text-kumo-link hover:underline">
-                    Kumo
-                  </Link>
-                </p>
-              </div>
+              </p>
             </div>
+          </div>
 
-            {/* Center: Tab switcher */}
-            {onTabChange && (
-              <div className="flex items-center bg-kumo-canvas rounded-lg p-1">
-                <button
-                  type="button"
-                  onClick={() => onTabChange("agent")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === "agent"
-                      ? "bg-kumo-base text-kumo-default shadow-sm"
-                      : "text-kumo-strong hover:text-kumo-default"
-                  }`}
-                >
-                  <Robot weight={activeTab === "agent" ? "fill" : "regular"} className="h-4 w-4" />
-                  <span className="hidden sm:inline">Agent</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onTabChange("standard")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === "standard"
-                      ? "bg-kumo-base text-kumo-default shadow-sm"
-                      : "text-kumo-strong hover:text-kumo-default"
-                  }`}
-                >
-                  <ChatCircle weight={activeTab === "standard" ? "fill" : "regular"} className="h-4 w-4" />
-                  <span className="hidden sm:inline">Standard</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onTabChange("architecture")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === "architecture"
-                      ? "bg-kumo-base text-kumo-default shadow-sm"
-                      : "text-kumo-strong hover:text-kumo-default"
-                  }`}
-                >
-                  <Graph weight={activeTab === "architecture" ? "fill" : "regular"} className="h-4 w-4" />
-                  <span className="hidden sm:inline">Architecture</span>
-                </button>
-              </div>
-            )}
+          {/* Inline tabs on large screens */}
+          {tabSwitcher && (
+            <div className="hidden w-80 flex-shrink-0 lg:block">
+              {tabSwitcher}
+            </div>
+          )}
 
-            {/* Right: Actions */}
-            <div className="flex items-center gap-2">
-              {onNewChat && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onNewChat}
-                  className="gap-1"
-                >
-                  <ArrowCounterClockwise weight="bold" className="h-4 w-4" />
-                  <span className="hidden sm:inline">New chat</span>
-                </Button>
-              )}
+          {/* Actions */}
+          <div className="flex flex-shrink-0 items-center gap-1">
+            {onNewChat && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onDrawerToggle}
-                className="gap-1"
+                onClick={onNewChat}
+                aria-label="Start a new chat"
+                className="h-9 gap-1 px-2"
               >
-                <Sidebar weight="bold" className="h-4 w-4" />
-                <span className="hidden sm:inline">AI Gateway</span>
-                {blockedCount > 0 && (
-                  <Badge variant="red" className="ml-1">
-                    {blockedCount}
-                  </Badge>
-                )}
+                <ArrowCounterClockwise weight="bold" className="h-4 w-4" />
+                <span className="hidden sm:inline">New chat</span>
               </Button>
-              <DarkModeToggle isDark={isDarkMode} onToggle={onDarkModeToggle} />
-            </div>
+            )}
+            {drawerToggleButton}
+            <DarkModeToggle isDark={isDarkMode} onToggle={onDarkModeToggle} />
           </div>
         </div>
+
+        {/* Tabs on phones and tablets */}
+        {tabSwitcher && (
+          <div className="border-t border-kumo-line/70 px-3 py-2 lg:hidden">
+            {tabSwitcher}
+          </div>
+        )}
       </header>
 
-      {/* Main content area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Chat column */}
-        <div
-          className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
-            isDrawerOpen ? "mr-0" : ""
-          }`}
-        >
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div
-            className={`flex-1 ${
+            className={
               wide
-                ? "overflow-hidden px-2 py-2 sm:px-3"
-                : "overflow-y-auto px-4 py-4 sm:px-6"
-            }`}
+                ? "min-h-0 min-w-0 flex-1 overflow-hidden p-2 sm:p-3"
+                : "min-h-0 min-w-0 flex-1 overflow-hidden px-3 pt-3 sm:px-6 sm:pt-4"
+            }
           >
             <div
-              className={`mx-auto ${
-                wide ? "max-w-none w-full" : "max-w-2xl"
-              } h-full flex flex-col`}
+              className={`mx-auto flex h-full w-full min-w-0 flex-col ${
+                wide ? "max-w-none" : "max-w-3xl"
+              }`}
             >
               {children}
             </div>
           </div>
         </div>
 
-        {/* AI Gateway Drawer */}
-        <div
-          className={`flex-shrink-0 border-l border-kumo-line bg-kumo-base transition-all duration-300 overflow-hidden ${
-            isDrawerOpen ? "w-[28rem]" : "w-0"
-          }`}
-        >
-          {isDrawerOpen && (
-            <div className="w-[28rem] h-full flex flex-col overflow-hidden">
-              {drawerContent}
-            </div>
-          )}
-        </div>
+        {/* Inline panel on desktop */}
+        {drawerContent && isDrawerOpen && (
+          <aside className="hidden w-[26rem] flex-shrink-0 flex-col border-l border-kumo-line bg-kumo-base lg:flex">
+            {drawerContent}
+          </aside>
+        )}
       </div>
+
+      {/* Bottom sheet on mobile and tablet */}
+      {drawerContent && !isDesktop && (
+        <MobileSheet
+          open={isDrawerOpen}
+          onOpenChange={(open) => {
+            if (!open) onDrawerToggle();
+          }}
+          title="AI Gateway activity"
+        >
+          {drawerContent}
+        </MobileSheet>
+      )}
     </main>
   );
 }
