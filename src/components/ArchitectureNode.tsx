@@ -51,9 +51,9 @@ const TONES: Record<
     badge: "bg-kumo-info-tint text-kumo-link",
   },
   violet: {
-    icon: "bg-kumo-recessed text-kumo-accent",
-    ring: "ring-kumo-accent/40",
-    badge: "bg-kumo-recessed text-kumo-accent",
+    icon: "bg-kumo-recessed text-kumo-brand",
+    ring: "ring-kumo-brand/40",
+    badge: "bg-kumo-recessed text-kumo-brand",
   },
   orange: {
     icon: "bg-kumo-warning-tint text-kumo-warning",
@@ -76,7 +76,7 @@ export function ArchitectureNode({
 
   return (
     <div
-      className={`w-[220px] rounded-xl border border-kumo-line bg-kumo-base px-3 py-3 shadow-sm transition-all duration-300 ${
+      className={`w-[170px] rounded-xl border border-kumo-line bg-kumo-base px-2.5 py-2.5 shadow-sm transition-all duration-300 sm:w-[200px] lg:w-[220px] lg:px-3 lg:py-3 ${
         data.active ? `scale-[1.02] ring-2 ${tone.ring}` : ""
       } ${selected ? "ring-2 ring-kumo-line" : ""} ${
         data.dimmed ? "opacity-40" : ""
@@ -100,15 +100,15 @@ export function ArchitectureNode({
         id="bottom-target"
         className="!h-1.5 !w-1.5 !border-0 !bg-kumo-line !opacity-0"
       />
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-2">
         <div className={`rounded-lg p-1.5 ${tone.icon}`}>
-          <IconComponent weight="duotone" className="h-5 w-5" />
+          <IconComponent weight="duotone" className="h-4 w-4 lg:h-5 lg:w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold leading-tight text-kumo-default">
+          <p className="text-[13px] font-semibold leading-tight text-kumo-default lg:text-sm">
             {data.title}
           </p>
-          <p className="mt-0.5 text-[11px] leading-tight text-kumo-strong">
+          <p className="mt-0.5 text-[10px] leading-tight text-kumo-strong lg:text-[11px]">
             {data.subtitle}
           </p>
         </div>

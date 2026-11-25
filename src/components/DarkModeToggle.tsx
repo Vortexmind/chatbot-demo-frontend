@@ -10,10 +10,12 @@ type DarkModeToggleProps = {
 
 export function DarkModeToggle({ isDark, onToggle }: DarkModeToggleProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <Sun
         weight={isDark ? "regular" : "fill"}
-        className={`h-4 w-4 ${isDark ? "text-kumo-subtle" : "text-kumo-warning"}`}
+        className={`hidden h-4 w-4 sm:block ${
+          isDark ? "text-kumo-subtle" : "text-kumo-warning"
+        }`}
       />
       <Switch
         checked={isDark}
@@ -22,7 +24,9 @@ export function DarkModeToggle({ isDark, onToggle }: DarkModeToggleProps) {
       />
       <Moon
         weight={isDark ? "fill" : "regular"}
-        className={`h-4 w-4 ${isDark ? "text-kumo-link" : "text-kumo-subtle"}`}
+        className={`hidden h-4 w-4 sm:block ${
+          isDark ? "text-kumo-link" : "text-kumo-subtle"
+        }`}
       />
     </div>
   );

@@ -14,14 +14,14 @@ export function ChatMessage({ message, username }: ChatMessageProps) {
   const isError = !!message.blocked;
 
   return (
-    <div className={`my-3 ${isUser ? "text-right" : "text-left"}`}>
+    <div className={`my-2.5 ${isUser ? "text-right" : "text-left"}`}>
       {/* Sender label with icon */}
       <SenderLabel isUser={isUser} username={username} />
 
       {/* Attachments */}
       {message.attachments && message.attachments.length > 0 && (
         <div
-          className={`flex flex-wrap gap-2 mb-2 ${
+          className={`mb-2 flex flex-wrap gap-2 ${
             isUser ? "justify-end" : "justify-start"
           }`}
         >
@@ -31,12 +31,14 @@ export function ChatMessage({ message, username }: ChatMessageProps) {
                 <img
                   src={`data:${att.mimeType};base64,${att.data}`}
                   alt={att.filename}
-                  className="max-w-[150px] max-h-[150px] rounded border border-kumo-line"
+                  className="max-h-[160px] max-w-[min(220px,70vw)] rounded-lg border border-kumo-line object-cover"
                 />
               ) : (
-                <div className="flex items-center gap-1 px-2 py-1 bg-kumo-recessed rounded text-base">
-                  <File weight="fill" className="h-4 w-4 text-kumo-strong" />
-                  <span className="text-kumo-default">{att.filename}</span>
+                <div className="flex items-center gap-1.5 rounded-lg bg-kumo-recessed px-2.5 py-1.5 text-sm">
+                  <File weight="fill" className="h-4 w-4 shrink-0 text-kumo-strong" />
+                  <span className="max-w-[180px] truncate text-kumo-default">
+                    {att.filename}
+                  </span>
                 </div>
               )}
             </div>

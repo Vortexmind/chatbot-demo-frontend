@@ -3,6 +3,7 @@
 import { Badge, Button } from "@cloudflare/kumo";
 import {
   Trash,
+  X,
   PaperPlaneTilt,
   CheckCircle,
   XCircle,
@@ -19,6 +20,7 @@ type AIGatewayDrawerProps = {
   info: AIGatewayInfo;
   isError: boolean;
   isHighlighted: boolean;
+  onClose?: () => void;
 };
 
 function formatTime(date: Date): string {
@@ -227,6 +229,7 @@ export function AIGatewayDrawer({
   info,
   isError,
   isHighlighted,
+  onClose,
 }: AIGatewayDrawerProps) {
   const requestCount = events.filter((e) => e.type === "request").length;
   const blockedCount = events.filter((e) => e.type === "blocked").length;
@@ -251,31 +254,47 @@ export function AIGatewayDrawer({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex-shrink-0 p-3 border-b border-kumo-line bg-kumo-recessed">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-base text-kumo-default">AI Gateway</span>
+      <div className="flex-shrink-0 border-b border-kumo-line bg-kumo-recessed px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-semibold text-kumo-default">
+              AI Gateway
+            </span>
             <Badge variant="secondary">{requestCount} requests</Badge>
             {blockedCount > 0 && (
               <Badge variant="red">{blockedCount} blocked</Badge>
             )}
           </div>
-          {events.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClear}
-              aria-label="Clear activity log"
-            >
-              <Trash weight="bold" className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex flex-shrink-0 items-center gap-0.5">
+            {events.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClear}
+                aria-label="Clear activity log"
+                className="h-8 w-8 p-0"
+              >
+                <Trash weight="bold" className="h-4 w-4" />
+              </Button>
+            )}
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                aria-label="Close activity panel"
+                className="h-8 w-8 p-0"
+              >
+                <X weight="bold" className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Current Route Status */}
       <div
-        className={`flex-shrink-0 p-3 border-b transition-colors duration-300 ${statusBgClass} ${statusBorderClass}`}
+        className={`flex-shrink-0 border-b p-3 transition-colors duration-300 ${statusBgClass} ${statusBorderClass}`}
       >
         <div className="text-sm font-medium text-kumo-strong mb-2">Current Route</div>
         <div className="space-y-1 text-sm">

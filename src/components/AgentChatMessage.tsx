@@ -84,46 +84,48 @@ function ToolPartView({
   const hasError = state === "output-error";
 
   let borderClass = "border-kumo-line";
-  if (hasError) borderClass = "border-kumo-danger-subtle";
-  else if (needsApproval) borderClass = "border-amber-400";
+  if (hasError) borderClass = "border-kumo-danger/40";
+  else if (needsApproval) borderClass = "border-kumo-warning/50";
 
   return (
-    <div className={`my-2 p-3 rounded-lg bg-kumo-canvas border ${borderClass}`}>
+    <div className={`my-2 rounded-lg border bg-kumo-canvas p-3 ${borderClass}`}>
       <div className="flex items-center gap-2 text-sm">
-        <Wrench weight="bold" className="h-4 w-4 text-kumo-accent" />
-        <span className="font-medium text-kumo-default">{name}</span>
+        <Wrench weight="bold" className="h-4 w-4 shrink-0 text-kumo-brand" />
+        <span className="min-w-0 truncate font-medium text-kumo-default">
+          {name}
+        </span>
         {part.toolCallId && (
-          <span className="text-xs text-kumo-subtle font-mono">
+          <span className="hidden text-xs font-mono text-kumo-subtle sm:inline">
             {part.toolCallId.slice(0, 8)}...
           </span>
         )}
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           {isRunning && (
-            <CircleNotch weight="bold" className="h-4 w-4 text-kumo-accent animate-spin" />
+            <CircleNotch weight="bold" className="h-4 w-4 text-kumo-brand animate-spin" />
           )}
           {needsApproval && (
-            <ShieldCheck weight="bold" className="h-4 w-4 text-amber-500" />
+            <ShieldCheck weight="bold" className="h-4 w-4 text-kumo-warning" />
           )}
-          {isComplete && <CheckCircle weight="fill" className="h-4 w-4 text-green-500" />}
-          {hasError && <XCircle weight="fill" className="h-4 w-4 text-red-500" />}
+          {isComplete && <CheckCircle weight="fill" className="h-4 w-4 text-kumo-success" />}
+          {hasError && <XCircle weight="fill" className="h-4 w-4 text-kumo-danger" />}
         </div>
       </div>
 
       {needsApproval && approval && (
-        <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
-          <div className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+        <div className="mt-3 rounded-md border border-kumo-warning/40 bg-kumo-warning-tint p-2.5">
+          <div className="mb-2 text-sm text-kumo-default">
             This tool requires your approval to run.
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => onApprove?.(approval.id)}
-              className="px-3 py-1 text-sm font-medium rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
+              className="min-h-9 rounded-md bg-kumo-brand px-3 text-sm font-medium text-kumo-inverse transition-colors hover:bg-kumo-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kumo-ring"
             >
               Approve
             </button>
             <button
               onClick={() => onDeny?.(approval.id)}
-              className="px-3 py-1 text-sm font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
+              className="min-h-9 rounded-md bg-kumo-base px-3 text-sm font-medium text-kumo-default ring ring-kumo-line transition-colors hover:bg-kumo-recessed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kumo-ring"
             >
               Deny
             </button>
@@ -136,7 +138,7 @@ function ToolPartView({
           <summary className="text-xs text-kumo-subtle cursor-pointer hover:text-kumo-strong">
             Input
           </summary>
-          <pre className="mt-1 text-xs bg-kumo-base p-2 rounded overflow-x-auto">
+          <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words rounded bg-kumo-base p-2 text-xs">
             {JSON.stringify(part.input, null, 2)}
           </pre>
         </details>
@@ -147,7 +149,7 @@ function ToolPartView({
           <summary className="text-xs text-kumo-subtle cursor-pointer hover:text-kumo-strong">
             Output
           </summary>
-          <pre className="mt-1 text-xs bg-kumo-base p-2 rounded overflow-x-auto max-h-48 overflow-y-auto whitespace-pre-wrap">
+          <pre className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded bg-kumo-base p-2 text-xs">
             {typeof part.output === "string"
               ? part.output
               : JSON.stringify(part.output, null, 2)}
@@ -156,7 +158,7 @@ function ToolPartView({
       )}
 
       {hasError && part.errorText && (
-        <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/30 rounded text-sm text-red-700 dark:text-red-300">
+        <div className="mt-2 rounded bg-kumo-danger-tint p-2 text-sm text-kumo-danger">
           {part.errorText}
         </div>
       )}

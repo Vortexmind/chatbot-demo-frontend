@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Background,
   Controls,
@@ -10,6 +10,7 @@ import {
   useEdgesState,
   useNodesState,
   type NodeTypes,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import { Button } from "@cloudflare/kumo";
 import {
@@ -27,6 +28,7 @@ import {
   type ArchitectureNode,
   type FlowId,
 } from "@/lib/architecture";
+import { useIsDesktop } from "@/lib/useMediaQuery";
 import { ArchitectureLane as ArchitectureLaneComponent } from "./ArchitectureLane";
 import { ArchitectureNode as ArchitectureNodeComponent } from "./ArchitectureNode";
 
@@ -49,6 +51,25 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeFlow, setActiveFlow] = useState<FlowId | null>(null);
   const [step, setStep] = useState(0);
+  const isDesktop = useIsDesktop();
+  const flowRef = useRef<ReactFlowInstance<ArchitectureNode, ArchitectureEdge> | null>(
+    null,
+  );
+
+  // On phones the whole diagram is unreadable when fitted to the viewport, so
+  // stepping through a flow zooms to the node that is being described.
+  const focusNode = useCallback(
+    (id: string | null) => {
+      if (isDesktop || !id) return;
+      flowRef.current?.fitView({
+        nodes: [{ id }],
+        duration: 400,
+        padding: 2.5,
+        maxZoom: 1.1,
+      });
+    },
+    [isDesktop],
+  );
 
   const activeFlowDef = useMemo(
     () => FLOWS.find((flow) => flow.id === activeFlow) ?? null,
@@ -107,21 +128,24 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
     setActiveFlow(id);
     setStep(0);
     setSelectedId(flow.nodeIds[0]);
-  }, []);
+    focusNode(flow.nodeIds[0]);
+  }, [focusNode]);
 
   const goPrevious = useCallback(() => {
     if (!activeFlowDef) return;
     const next = Math.max(step - 1, 0);
     setStep(next);
     setSelectedId(activeFlowDef.nodeIds[next]);
-  }, [activeFlowDef, step]);
+    focusNode(activeFlowDef.nodeIds[next]);
+  }, [activeFlowDef, step, focusNode]);
 
   const goNext = useCallback(() => {
     if (!activeFlowDef) return;
     const next = Math.min(step + 1, activeFlowDef.nodeIds.length - 1);
     setStep(next);
     setSelectedId(activeFlowDef.nodeIds[next]);
-  }, [activeFlowDef, step]);
+    focusNode(activeFlowDef.nodeIds[next]);
+  }, [activeFlowDef, step, focusNode]);
 
   const clearFlow = useCallback(() => {
     setActiveFlow(null);
@@ -138,9 +162,52 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
     [nodes, selectedId],
   );
 
+  const stepControls = (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 gap-1 px-2"
+        onClick={goPrevious}
+        disabled={!activeFlowDef || step === 0}
+      >
+        <ArrowLeft weight="bold" className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Previous</span>
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 gap-1 px-2"
+        onClick={goNext}
+        disabled={
+          !activeFlowDef || step >= activeFlowDef.nodeIds.length - 1
+        }
+      >
+        <span className="hidden sm:inline">Next</span>
+        <ArrowRight weight="bold" className="h-3.5 w-3.5" />
+      </Button>
+      {activeFlowDef && (
+        <span className="whitespace-nowrap px-1 text-xs text-kumo-strong">
+          Step {step + 1} of {activeFlowDef.nodeIds.length}
+        </span>
+      )}
+      {(activeFlowDef || selectedId) && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 gap-1 px-2"
+          onClick={clearFlow}
+          aria-label="Clear selection"
+        >
+          <X weight="bold" className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </>
+  );
+
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-kumo-line bg-kumo-base lg:flex-row">
-      <div className="relative min-h-[420px] flex-1">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-kumo-line bg-kumo-base lg:flex-row">
+      <div className="relative h-[46dvh] flex-shrink-0 sm:h-[52dvh] lg:h-auto lg:min-h-0 lg:flex-1">
         <ReactFlow<ArchitectureNode, ArchitectureEdge>
           nodes={displayNodes}
           edges={displayEdges}
@@ -156,6 +223,9 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
           maxZoom={1.6}
           nodesDraggable={false}
           nodesConnectable={false}
+          onInit={(instance) => {
+            flowRef.current = instance;
+          }}
           className="bg-kumo-canvas"
         >
           <Background
@@ -163,8 +233,9 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
             size={1}
             color={isDarkMode ? "#334155" : "#cbd5e1"}
           />
-          <Controls showInteractive={false} />
+          <Controls showInteractive={false} className="hidden sm:flex" />
           <MiniMap
+            className="hidden lg:block"
             pannable
             zoomable
             nodeColor={(node) =>
@@ -176,76 +247,47 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
           />
           <Panel
             position="top-left"
-            className="flex flex-col gap-2 rounded-lg border border-kumo-line bg-kumo-base/90 p-2 backdrop-blur"
+            className="flex flex-col gap-2 rounded-lg border border-kumo-line bg-kumo-base/95 p-1.5 backdrop-blur"
           >
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Button
                 variant={activeFlow === "standard" ? "primary" : "secondary"}
                 size="sm"
+                className="h-8"
                 onClick={() => selectFlow("standard")}
               >
-                Standard flow
+                Standard
               </Button>
               <Button
                 variant={activeFlow === "agent" ? "primary" : "secondary"}
                 size="sm"
+                className="h-8"
                 onClick={() => selectFlow("agent")}
               >
-                Agent flow
+                Agent
               </Button>
               <Button
                 variant={activeFlow === "observability" ? "primary" : "secondary"}
                 size="sm"
+                className="h-8"
                 onClick={() => selectFlow("observability")}
               >
                 Logs
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1"
-                onClick={goPrevious}
-                disabled={!activeFlowDef || step === 0}
-              >
-                <ArrowLeft weight="bold" className="h-3.5 w-3.5" />
-                Previous
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1"
-                onClick={goNext}
-                disabled={
-                  !activeFlowDef ||
-                  step >= activeFlowDef.nodeIds.length - 1
-                }
-              >
-                Next
-                <ArrowRight weight="bold" className="h-3.5 w-3.5" />
-              </Button>
-              {activeFlowDef && (
-                <span className="text-xs text-kumo-strong">
-                  Step {step + 1} of {activeFlowDef.nodeIds.length}
-                </span>
-              )}
-              {(activeFlowDef || selectedId) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1"
-                  onClick={clearFlow}
-                >
-                  <X weight="bold" className="h-3.5 w-3.5" />
-                  Clear
-                </Button>
-              )}
+            <div className="hidden flex-wrap items-center gap-1 lg:flex">
+              {stepControls}
             </div>
           </Panel>
           <Panel
+            position="bottom-center"
+            className="flex items-center gap-1 rounded-lg border border-kumo-line bg-kumo-base/95 px-1.5 py-1 backdrop-blur lg:hidden"
+          >
+            {stepControls}
+          </Panel>
+          <Panel
             position="top-right"
-            className="hidden rounded-lg border border-kumo-line bg-kumo-base/90 px-3 py-2 text-xs backdrop-blur sm:block"
+            className="hidden rounded-lg border border-kumo-line bg-kumo-base/95 px-3 py-2 text-xs backdrop-blur lg:block"
           >
             <p className="mb-1.5 font-medium text-kumo-default">Legend</p>
             <div className="space-y-1 text-kumo-strong">
@@ -268,10 +310,20 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
             </div>
           </Panel>
         </ReactFlow>
+
+        {/* The fitted graph is decorative on phones; point people at the flow
+            controls, which zoom to a readable node. */}
+        {!activeFlowDef && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-14 z-10 flex justify-center px-4 lg:hidden">
+            <p className="rounded-lg border border-kumo-line bg-kumo-base/95 px-3 py-1.5 text-center text-xs font-medium text-kumo-strong shadow-sm backdrop-blur">
+              Pick a flow to step through the request path
+            </p>
+          </div>
+        )}
       </div>
 
-      <aside className="flex w-full shrink-0 flex-col border-t border-kumo-line bg-kumo-base lg:w-80 lg:border-l lg:border-t-0">
-        <div className="flex items-center justify-between border-b border-kumo-line px-4 py-3">
+      <aside className="flex min-h-0 flex-1 flex-col border-t border-kumo-line bg-kumo-base lg:w-80 lg:flex-none lg:border-l lg:border-t-0">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-kumo-line px-3 py-2">
           <p className="text-sm font-semibold text-kumo-default">
             Component details
           </p>
@@ -279,20 +331,20 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
             <button
               type="button"
               onClick={() => setSelectedId(null)}
-              className="rounded-md p-1 text-kumo-subtle transition-colors hover:bg-kumo-recessed hover:text-kumo-default"
+              className="rounded-md p-1.5 text-kumo-subtle transition-colors hover:bg-kumo-recessed hover:text-kumo-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kumo-ring"
               aria-label="Clear selection"
             >
               <X weight="bold" className="h-4 w-4" />
             </button>
           )}
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
           {selectedNode ? (
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-kumo-subtle">
                 {selectedNode.data.subtitle}
               </p>
-              <h3 className="mt-1 text-lg font-semibold text-kumo-default">
+              <h3 className="mt-1 text-base font-semibold text-kumo-default">
                 {selectedNode.data.title}
               </h3>
               {selectedNode.data.badges && (
@@ -335,10 +387,10 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
                 Select a component
               </p>
               <p className="mt-1.5">
-                Click any node to see what it does and which part of the request
+                Tap any node to see what it does and which part of the request
                 path it handles.
               </p>
-              <div className="mt-4 rounded-lg border border-kumo-line bg-kumo-recessed p-3">
+              <div className="mt-3 rounded-lg border border-kumo-line bg-kumo-recessed p-3">
                 <p className="text-xs font-medium text-kumo-default">
                   Try a flow
                 </p>
@@ -347,7 +399,7 @@ export function ArchitectureTab({ isDarkMode }: ArchitectureTabProps) {
                   the request path at your own pace.
                 </p>
               </div>
-              <div className="mt-4 rounded-lg border border-kumo-line p-3">
+              <div className="mt-3 rounded-lg border border-kumo-line p-3">
                 <p className="text-xs font-medium text-kumo-default">
                   Protection boundary
                 </p>

@@ -348,7 +348,7 @@ export function AgentChatTab({
         <div className="text-center">
           <CircleNotch
             weight="bold"
-            className="h-12 w-12 text-kumo-accent mx-auto mb-4 animate-spin"
+            className="h-12 w-12 text-kumo-brand mx-auto mb-4 animate-spin"
           />
           <h2 className="text-xl font-semibold text-kumo-default mb-2">
             Connecting to agent
@@ -360,37 +360,38 @@ export function AgentChatTab({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 py-3 px-4 border-b border-kumo-line bg-kumo-canvas/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Robot weight="bold" className="h-4 w-4 text-kumo-accent" />
-          <span className="text-sm text-kumo-strong">Agent Chat</span>
-          <Badge variant="secondary" className="text-xs">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-kumo-line bg-kumo-canvas/50 px-1 py-2 sm:px-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <Robot weight="bold" className="h-4 w-4 shrink-0 text-kumo-brand" />
+          <span className="truncate text-sm text-kumo-strong">Agent Chat</span>
+          <Badge variant="secondary" className="hidden text-xs sm:inline-flex">
             Workers AI + AI Gateway
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-shrink-0 items-center gap-1.5">
           <Badge variant="green" className="gap-1">
-            <span className="h-2 w-2 rounded-full bg-green-500" />
-            Connected
+            <span className="h-2 w-2 rounded-full bg-kumo-success" />
+            <span className="hidden sm:inline">Connected</span>
           </Badge>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleNewChat}
-            className="gap-1 text-kumo-strong hover:text-kumo-default"
+            aria-label="Start a new chat"
+            className="h-9 gap-1 px-2 text-kumo-strong hover:text-kumo-default"
           >
             <Trash weight="bold" className="h-4 w-4" />
-            New chat
+            <span className="hidden sm:inline">New chat</span>
           </Button>
         </div>
       </div>
 
       {isBusy && (
-        <div className="flex-shrink-0 py-2 px-4 bg-kumo-canvas/80 border-b border-kumo-line flex items-center gap-2">
+        <div className="flex flex-shrink-0 items-center gap-2 border-b border-kumo-line bg-kumo-canvas/80 px-1 py-2 sm:px-0">
           <CircleNotch
             weight="bold"
-            className="h-3.5 w-3.5 text-kumo-accent animate-spin"
+            className="h-3.5 w-3.5 text-kumo-brand animate-spin"
           />
           <span className="text-sm text-kumo-strong">
             {status === "submitted"
@@ -402,23 +403,24 @@ export function AgentChatTab({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto py-4 px-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3">
         {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-kumo-subtle max-w-md">
-              <Robot weight="light" className="h-14 w-14 mx-auto mb-3" />
-              <p className="text-lg mb-2 text-kumo-strong">Agent Chat</p>
-              <p className="text-sm mb-4">
+          <div className="flex h-full items-center justify-center">
+            <div className="max-w-md text-center text-kumo-subtle">
+              <Robot weight="light" className="mx-auto mb-3 h-12 w-12" />
+              <p className="mb-2 text-base text-kumo-strong">Agent Chat</p>
+              <p className="mb-4 text-sm">
                 This agent streams from Workers AI through AI Gateway and can call
                 server tools, browser tools, and approval-gated tools.
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-center">
                 {EXAMPLE_PROMPTS.map((example) => (
                   <Button
                     key={example.label}
                     variant="secondary"
                     size="sm"
                     onClick={() => handleExample(example.prompt)}
+                    className="justify-center"
                   >
                     {example.label}
                   </Button>
@@ -427,7 +429,7 @@ export function AgentChatTab({
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div>
             {messages.map((message: UIMessage, index) => (
               <AgentChatMessage
                 key={message.id}
@@ -452,7 +454,7 @@ export function AgentChatTab({
                   <span className="inline-flex items-center gap-2 text-sm text-kumo-strong">
                     <CircleNotch
                       weight="bold"
-                      className="h-4 w-4 text-kumo-accent animate-spin"
+                      className="h-4 w-4 text-kumo-brand animate-spin"
                     />
                     Agent is thinking...
                   </span>
@@ -465,8 +467,8 @@ export function AgentChatTab({
       </div>
 
       {chatError && !errorDismissed && (
-        <div className="flex-shrink-0 mx-4 mb-2 p-3 rounded-lg border border-kumo-danger-subtle bg-kumo-danger-tint text-sm flex items-start gap-2">
-          <XCircle weight="fill" className="h-4 w-4 text-kumo-danger mt-0.5" />
+        <div className="mx-1 mb-2 flex flex-shrink-0 items-start gap-2 rounded-lg border border-kumo-danger/40 bg-kumo-danger-tint p-3 text-sm sm:mx-0">
+          <XCircle weight="fill" className="mt-0.5 h-4 w-4 text-kumo-danger" />
           <div className="flex-1">
             <p className="font-medium text-kumo-default">
               {blockedError
@@ -482,7 +484,7 @@ export function AgentChatTab({
               <summary className="text-xs text-kumo-subtle cursor-pointer">
                 Details
               </summary>
-              <pre className="mt-1 text-xs bg-kumo-base p-2 rounded overflow-x-auto max-h-32 overflow-y-auto whitespace-pre-wrap">
+              <pre className="mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap break-words rounded bg-kumo-base p-2 text-xs">
                 {chatError.message}
               </pre>
             </details>
@@ -495,7 +497,7 @@ export function AgentChatTab({
         </div>
       )}
 
-      <div className="flex-shrink-0 border-t border-kumo-line p-4">
+      <div className="flex-shrink-0 border-t border-kumo-line pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <AgentChatInput
           value={input}
           onChange={setInput}

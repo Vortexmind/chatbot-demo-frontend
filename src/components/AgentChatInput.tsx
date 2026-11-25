@@ -43,7 +43,7 @@ export function AgentChatInput({
   const canSubmit = !disabled && !loading && value.trim().length > 0;
 
   return (
-    <div className="relative flex items-end gap-2 rounded-2xl border border-kumo-line bg-kumo-base px-4 py-3 focus-within:border-kumo-accent focus-within:ring-1 focus-within:ring-kumo-accent">
+    <div className="relative flex items-end gap-2 rounded-2xl border border-kumo-line bg-kumo-base px-3 py-2.5 transition-colors focus-within:border-kumo-brand focus-within:ring-1 focus-within:ring-kumo-brand">
       <textarea
         ref={textareaRef}
         value={value}
@@ -52,14 +52,14 @@ export function AgentChatInput({
         placeholder={disabled ? "Connecting to agent..." : "Ask the agent..."}
         disabled={disabled}
         rows={1}
-        className="flex-1 resize-none bg-transparent text-kumo-default placeholder:text-kumo-subtle focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        className="max-h-40 min-h-9 flex-1 resize-none bg-transparent py-1.5 text-base leading-snug text-kumo-default placeholder:text-kumo-subtle focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       <button
         type="button"
         onClick={onSubmit}
         disabled={!canSubmit}
-        className="flex-shrink-0 rounded-full bg-kumo-accent p-2 text-white transition-colors hover:bg-kumo-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-kumo-brand text-white transition-colors hover:bg-kumo-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
         aria-label="Send message"
       >
         {loading ? (
