@@ -10,6 +10,17 @@
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
 	},
+	// Keep the app off its public workers.dev hostname and preview URLs, where
+	// the Cloudflare Access application does not apply. Access is the only thing
+	// standing between the internet and this UI.
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [
+		{
+			"pattern": "chatbot-demo.homesecurity.rocks",
+			"custom_domain": true
+		}
+	],
 	"kv_namespaces": [
 		{
 			"binding": "NEXT_INC_CACHE_KV",

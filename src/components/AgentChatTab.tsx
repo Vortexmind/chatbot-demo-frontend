@@ -22,7 +22,6 @@ import { SenderLabel } from "./SenderLabel";
 type ConnectionState = "connecting" | "connected" | "error";
 
 type AgentChatTabProps = {
-  userEmail?: string;
   onEvent?: (event: Omit<AIGatewayEvent, "id" | "timestamp">) => string;
   onEventUpdate?: (id: string, updates: Partial<AIGatewayEvent>) => void;
 };
@@ -131,7 +130,6 @@ function isAssistantComplete(message: UIMessage | undefined): boolean {
 }
 
 export function AgentChatTab({
-  userEmail,
   onEvent,
   onEventUpdate,
 }: AgentChatTabProps) {
@@ -184,7 +182,6 @@ export function AgentChatTab({
   } = useAgentChat({
     agent,
     credentials: "include",
-    body: () => ({ userEmail }),
     onToolCall: async ({ toolCall, addToolOutput }) => {
       if (toolCall.toolName === "getUserTimezone") {
         addToolOutput({

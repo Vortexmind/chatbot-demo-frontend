@@ -117,8 +117,9 @@ Agent tab backed by the separate `chatbot-demo-agent` Worker:
 - `useAgentChat` manages messages, streaming, tool calls, and approvals.
 - `onToolCall` completes the client-side `getUserTimezone` tool.
 - `calculate` above 1000 requires approval via `addToolApprovalResponse`.
-- The agent Worker is on the same hostname, so the existing Cloudflare Access application covers it.
-- Room IDs live in `sessionStorage`, so closing the browser starts a fresh conversation.
+- The agent Worker is on the same hostname, so the existing Cloudflare Access application covers it. The Worker also verifies the Access JWT itself.
+- Do not send identity in the chat request body. The agent Worker derives the signed-in email from the verified Access token; a client-supplied value would let any user spoof AI Gateway attribution.
+- Room IDs live in `sessionStorage`, so closing the browser starts a fresh conversation. The agent Worker scopes the Durable Object name to the verified identity, so a room id alone does not grant access.
 - `onEvent` and `onEventUpdate` feed agent request, streaming, response, and error events into the AI Gateway drawer.
 
 ### ArchitectureTab.tsx
@@ -135,6 +136,25 @@ Timeline of AI Gateway events, current model/provider route, and block reasons.
 
 ### ChatInput.tsx
 Textarea, attachment picker, and send button. Enforces `ACCEPTED_FILE_TYPES`, `MAX_FILE_SIZE`, and `MAX_FILES`.
+
+### Security headers (next.config.mjs)
+The app depends on the `CF_Authorization` cookie, which is readable from
+JavaScript, so any XSS becomes session theft. `next.config.mjs` sets a CSP and
+the standard hardening headers on every route:
+- `script-src 'self' 'unsafe-inline'` — Next injects inline bootstrap scripts, so
+  `unsafe-inline` is required. There is no external script origin and no `eval`
+  outside development.
+- `connect-src` allowlists the chat API origin and the same-origin agent socket.
+  Adding a new backend means adding its origin here.
+- `frame-ancestors 'none'` and `X-Frame-Options: DENY` block framing.
+- `poweredByHeader: false` removes the `X-Powered-By` header.
+
+Verify after changing it: `pnpm preview` then
+`curl -sI http://127.0.0.1:8787/ | grep -i content-security-policy`.
+
+`wrangler.json` sets `workers_dev: false` and `preview_urls: false`. Cloudflare
+Access only covers the custom domain, so do not re-enable them: the
+`*.workers.dev` hostname would serve the whole UI without authentication.
 
 ## Types (src/lib/types.ts)
 

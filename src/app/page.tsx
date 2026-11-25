@@ -508,7 +508,6 @@ export default function Home() {
         </>
       ) : activeTab === "agent" ? (
         <AgentChatTab
-          userEmail={userEmail}
           onEvent={handleAgentEvent}
           onEventUpdate={updateEvent}
         />

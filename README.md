@@ -65,7 +65,11 @@ This application expects to be protected by [Cloudflare Access](https://develope
 
 When users authenticate through Cloudflare Access, a `CF_Authorization` cookie is set automatically. The frontend reads this cookie, decodes the email for display, and sends the token to the backend API for authentication.
 
-The backend sends the verified Access email to AI Gateway as `cf-aig-metadata` keys `user_id` and `user`, so the AI Gateway User Insights dashboard attributes requests and spend to the signed-in user.
+Because that cookie is readable from JavaScript, `next.config.mjs` applies a Content-Security-Policy and the standard hardening headers to every route. If you add a new backend origin, add it to `connect-src` there.
+
+`wrangler.json` sets `workers_dev: false` and `preview_urls: false`, and declares the custom domain explicitly. Cloudflare Access only applies to the custom domain, so leaving the `workers.dev` hostname enabled would serve the UI to the open internet.
+
+The backend sends the verified Access email to AI Gateway as `cf-aig-metadata` keys `user_id` and `user`, so the AI Gateway User Insights dashboard attributes requests and spend to the signed-in user. The agent Worker derives that email from the verified token; the browser never sends it.
 
 ## Getting Started
 
