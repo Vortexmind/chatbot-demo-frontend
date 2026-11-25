@@ -32,9 +32,17 @@ pnpm cf-typegen  # Generate Cloudflare Worker types for env.d.ts
 ```
 
 ### Build toolchain
-- CI uses pnpm 9.10.0 and Node 24 (`.nvmrc`).
+- Three different pnpm versions touch this repo, and they read overrides from **different places**:
+  | Runner | pnpm | reads overrides from |
+  | --- | --- | --- |
+  | Workers Builds (deploy) | 9.10.0 | `package.json` → `pnpm.overrides` |
+  | GitHub Actions (`.github/workflows/build.yml`) | 11 | `pnpm-workspace.yaml` |
+  | Local | 11 | `pnpm-workspace.yaml` |
+- **Keep the same `overrides` block in both `package.json` (`pnpm.overrides`) and `pnpm-workspace.yaml`.** Deleting the `package.json` copy makes pnpm 9 compute an empty override set, which no longer matches the `overrides:` section recorded in `pnpm-lock.yaml`, and Workers Builds fails with `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`. pnpm 11 warns that the field is ignored; that warning is expected and harmless.
+- Node 24 (`.nvmrc`).
 - Keep `packages: ["."]` in `pnpm-workspace.yaml`; pnpm 9 rejects the file without it.
 - Keep `@opennextjs/cloudflare` at 1.20.12 or later for Next.js 16.4 (`preview-props.json` inlining). 1.20.18 requires `wrangler` 4.148 or later.
+- Before pushing, reproduce the deploy install exactly: `npx pnpm@9.10.0 install --frozen-lockfile --lockfile-only`. `pnpm check` does **not** catch pnpm 9 lockfile-config mismatches.
 
 ## Project Structure
 
